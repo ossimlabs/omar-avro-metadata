@@ -4,7 +4,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable
 
-@DynamoDBTable(tableName = "AvroMetadata")
+@DynamoDBTable(tableName = "avro-metadata")
 class AvroMetadata
 {
     private String imageId
