@@ -40,7 +40,6 @@ ext {
 dependencies {
     compile('org.springframework.boot:spring-boot-starter')
     compile('org.springframework.boot:spring-boot-starter-web')
-    compile('org.springframework.data:spring-data-releasetrain')
 
     compile('org.codehaus.groovy:groovy')
     compile('com.github.derjust:spring-data-dynamodb:4.5.0')
