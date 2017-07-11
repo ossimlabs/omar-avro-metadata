@@ -38,11 +38,13 @@ ext {
 }
 
 dependencies {
-    compile('org.springframework.cloud:spring-cloud-starter-aws')
-    compile('org.springframework.boot:spring-boot-starter-data-rest')
+    compile('org.springframework.boot:spring-boot-starter')
     compile('org.springframework.boot:spring-boot-starter-web')
+    compile('org.springframework.data:spring-data-releasetrain')
+
     compile('org.codehaus.groovy:groovy')
-    compile('org.codehaus.groovy:groovy-json')
+    compile('com.github.derjust:spring-data-dynamodb:4.5.0')
+    compile('com.amazonaws:aws-java-sdk-dynamodb:1.11.160')
     testCompile('org.springframework.boot:spring-boot-starter-test')
 }
 
