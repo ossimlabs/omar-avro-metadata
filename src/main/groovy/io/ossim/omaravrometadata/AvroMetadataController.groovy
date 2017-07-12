@@ -18,11 +18,16 @@ class AvroMetadataController
     @Autowired
     private AvroMetadataService avroMetadataService
 
-    @RequestMapping(value = "/add/avrometadata", method = RequestMethod.POST)
-    ResponseEntity<AvroMetadata> addAvroMetadata(@RequestBody AvroMetadata avroMetadata)
+    @RequestMapping(value = "/avrometadata/post/{imageId}", method = RequestMethod.POST)
+    ResponseEntity<AvroMetadata> addAvroMetadata(@RequestBody String avroMetadata, @PathVariable("imageId") String imageId)
     {
         log.info("Adding AvroMetadata from RequestBody to database.")
-        AvroMetadata addedAvroMetadata = avroMetadataService.addAvroMetadata(avroMetadata)
+
+        AvroMetadata toAdd = new AvroMetadata()
+        toAdd.setImageId(imageId)
+        toAdd.setAvroMetadata(avroMetadata)
+        AvroMetadata addedAvroMetadata = avroMetadataService.addAvroMetadata(toAdd)
+
         if (addedAvroMetadata == null)
         {
             return new ResponseEntity("Could not add AvroMetadata to database", HttpStatus.BAD_REQUEST)
@@ -30,7 +35,7 @@ class AvroMetadataController
         return new ResponseEntity<AvroMetadata>(addedAvroMetadata, HttpStatus.OK)
     }
 
-    @RequestMapping(value = "/get/avrometadata/{imageId}", method = RequestMethod.GET)
+    @RequestMapping(value = "/avrometadata/get/{imageId}", method = RequestMethod.GET)
     ResponseEntity<?> getAvroMetadata(@PathVariable("imageId") String imageId)
     {
         log.info("Fetching AvroMetadata with Image ID ${imageId}")
@@ -44,7 +49,7 @@ class AvroMetadataController
         return new ResponseEntity<AvroMetadata>(avroMetadata, HttpStatus.OK)
     }
 
-    @RequestMapping(value = "/list/avrometadata")
+    @RequestMapping(value = "/avrometadata/list")
     ResponseEntity<List<AvroMetadata>> listAllAvroMetadata()
     {
         log.info("Retrieving all AvroMetadata objects")
