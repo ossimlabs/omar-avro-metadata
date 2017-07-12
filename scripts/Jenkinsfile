@@ -56,7 +56,7 @@ node(""){
            {
                // Run all tasks on the app. This includes pushing to OpenShift and S3.
                sh """
-               pushd ${workspaceDir}/${appName}
+               pushd ${workspaceDir}
                ./gradlew :${appName}:${GRADLE_TASK}
                popd
                """
