@@ -3,9 +3,15 @@ package io.ossim.omaravrometadata
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
+/**
+ * Implements the methods in AvroMetadataService by calling the AvroMetadataRepository to interface with the database
+ */
 @Service
 class AvroMetadataServiceImpl implements AvroMetadataService
 {
+    /**
+     * Used to interface with and manipulate objects in the database
+     */
     @Autowired
     private AvroMetadataRepository avroMetadataRepository
 
