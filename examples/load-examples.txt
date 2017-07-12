@@ -1,0 +1,3 @@
+Convenience command for loading all the example JSON files using curl
+
+for x in `find *.json`; do curl -vX POST http://localhost:8080/api/avrometadata/post/$x -d @$x --header "Content-Type: application/json"; done

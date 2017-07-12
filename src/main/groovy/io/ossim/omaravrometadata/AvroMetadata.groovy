@@ -37,12 +37,12 @@ class AvroMetadata
         return avroMetadata
     }
 
-    void setImageId(String imageId)
+    void setImageId(final String imageId)
     {
         this.imageId = imageId
     }
 
-    void setAvroMetadata(String avroMetadata)
+    void setAvroMetadata(final String avroMetadata)
     {
         this.avroMetadata = avroMetadata
     }
