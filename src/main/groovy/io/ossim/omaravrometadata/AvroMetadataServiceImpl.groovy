@@ -22,6 +22,16 @@ class AvroMetadataServiceImpl implements AvroMetadataService
     }
 
     @Override
+    boolean deleteAvroMetadata(String imageId)
+    {
+        AvroMetadata toDelete = avroMetadataRepository.findByImageId(imageId)
+        if (toDelete == null) return false
+
+        avroMetadataRepository.delete(toDelete)
+        return true
+    }
+
+    @Override
     List<AvroMetadata> listAvroMetadata()
     {
         (List<AvroMetadata>) avroMetadataRepository.findAll()

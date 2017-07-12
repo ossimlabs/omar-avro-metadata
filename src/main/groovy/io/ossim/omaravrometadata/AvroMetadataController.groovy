@@ -19,7 +19,7 @@ class AvroMetadataController
     private AvroMetadataService avroMetadataService
 
     @RequestMapping(value = "/avrometadata/post/{imageId}", method = RequestMethod.POST)
-    ResponseEntity<AvroMetadata> addAvroMetadata(@RequestBody String avroMetadata, @PathVariable("imageId") String imageId)
+    ResponseEntity<?> addAvroMetadata(@RequestBody String avroMetadata, @PathVariable("imageId") String imageId)
     {
         log.info("Adding AvroMetadata from RequestBody to database.")
 
@@ -49,8 +49,8 @@ class AvroMetadataController
         return new ResponseEntity<AvroMetadata>(avroMetadata, HttpStatus.OK)
     }
 
-    @RequestMapping(value = "/avrometadata/list")
-    ResponseEntity<List<AvroMetadata>> listAllAvroMetadata()
+    @RequestMapping(value = "/avrometadata/list", method = RequestMethod.GET)
+    ResponseEntity<?> listAllAvroMetadata()
     {
         log.info("Retrieving all AvroMetadata objects")
         List<AvroMetadata> list = avroMetadataService.listAvroMetadata()
@@ -60,5 +60,18 @@ class AvroMetadataController
             return new ResponseEntity("No AvroMetadata found", HttpStatus.NOT_FOUND)
         }
         return new ResponseEntity<List<AvroMetadata>>(list, HttpStatus.OK)
+    }
+
+    @RequestMapping(value = "/avrometadata/delete/{imageId}", method = RequestMethod.DELETE)
+    ResponseEntity<?> deleteAvroMetadata(@PathVariable("imageId") String imageId)
+    {
+        log.info("Deleting AvroMetadata matching ${imageId}")
+        boolean deleted = avroMetadataService.deleteAvroMetadata(imageId)
+
+        if (deleted)
+        {
+            return new ResponseEntity("Successfully found and deleted AvroMetadata for ${imageId}", HttpStatus.OK)
+        }
+        return new ResponseEntity("No AvroMetadata found for ${imageId}", HttpStatus.NOT_FOUND)
     }
 }
