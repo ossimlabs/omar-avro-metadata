@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController
  * The REST API Controller that exposes GET, POST, and DELETE methods for interfacing with the "avro-metadata" table in DynamoDB
  */
 @RestController
-@RequestMapping(value = "/api")
+@RequestMapping(value = "/avroMetadata")
 @Slf4j
 class AvroMetadataController
 {
@@ -30,7 +30,7 @@ class AvroMetadataController
      * @param imageId the ID of the image to use as the key for the AvroMetadata object
      * @return Error if unsuccessful, the added AvroMetadata object and an HTTP OK response code if successful
      */
-    @RequestMapping(value = "/avrometadata/post/{imageId}", method = RequestMethod.POST)
+    @RequestMapping(value = "/add/{imageId}", method = RequestMethod.POST)
     ResponseEntity<?> addAvroMetadata(@RequestBody String avroMetadata, @PathVariable("imageId") String imageId)
     {
         log.info("Adding AvroMetadata from RequestBody to database.")
@@ -52,7 +52,7 @@ class AvroMetadataController
      * @param imageId the ID of the image to use as the key when retrieving the AvroMetadata object
      * @return Error if unsuccessful, the retrieved AvroMetadata object and an HTTP OK response code if successful
      */
-    @RequestMapping(value = "/avrometadata/get/{imageId}", method = RequestMethod.GET)
+    @RequestMapping(value = "/get/{imageId}", method = RequestMethod.GET)
     ResponseEntity<?> getAvroMetadata(@PathVariable("imageId") String imageId)
     {
         log.info("Fetching AvroMetadata with Image ID ${imageId}")
@@ -70,7 +70,7 @@ class AvroMetadataController
      * HTTP GET endpoint for retrieving all AvroMetadata objects from the "avro-metadata" table in DynamoDB
      * @return Error if unsuccessful, a list of AvroMetadata objects and an HTTP OK response code if successful
      */
-    @RequestMapping(value = "/avrometadata/list", method = RequestMethod.GET)
+    @RequestMapping(value = "/list", method = RequestMethod.GET)
     ResponseEntity<?> listAllAvroMetadata()
     {
         log.info("Retrieving all AvroMetadata objects")
@@ -88,7 +88,7 @@ class AvroMetadataController
      * @param imageId the ID of the image to use as the key to specify which AvroMetadta object to remove from the "avro-metadata" table
      * @return Error if unsuccessful, a success message and an HTTP OK response code if successful
      */
-    @RequestMapping(value = "/avrometadata/delete/{imageId}", method = RequestMethod.DELETE)
+    @RequestMapping(value = "/delete/{imageId}", method = RequestMethod.DELETE)
     ResponseEntity<?> deleteAvroMetadata(@PathVariable("imageId") String imageId)
     {
         log.info("Deleting AvroMetadata matching ${imageId}")

@@ -49,6 +49,8 @@ dependencies {
 
     compile('org.codehaus.groovy:groovy')
     testCompile('org.springframework.boot:spring-boot-starter-test')
+
+    compile('io.springfox:springfox-swagger2:2.0.1')
 }
 
 dependencyManagement {
