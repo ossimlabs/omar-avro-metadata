@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * The REST API Controller that exposes GET, POST, and DELETE methods for interfacing with the "avro-metadata" table in DynamoDB
  */
-@Api(value="avrometadata", description="Allows retrieval and creation of AvroMetadata objects from DynamoDB")
+@Api(value="avroMetadata", description="Allows retrieval and creation of AvroMetadata objects from DynamoDB")
 @RestController
 @RequestMapping(value = "/avroMetadata")
 @Slf4j
