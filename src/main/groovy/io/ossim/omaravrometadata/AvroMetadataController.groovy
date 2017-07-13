@@ -1,5 +1,7 @@
 package io.ossim.omaravrometadata
 
+import com.wordnik.swagger.annotations.Api
+import com.wordnik.swagger.annotations.ApiOperation
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * The REST API Controller that exposes GET, POST, and DELETE methods for interfacing with the "avro-metadata" table in DynamoDB
  */
+@Api(value="avrometadata", description="Allows retrieval and creation of AvroMetadata objects from DynamoDB")
 @RestController
 @RequestMapping(value = "/avroMetadata")
 @Slf4j
@@ -30,6 +33,7 @@ class AvroMetadataController
      * @param imageId the ID of the image to use as the key for the AvroMetadata object
      * @return Error if unsuccessful, the added AvroMetadata object and an HTTP OK response code if successful
      */
+    @ApiOperation(value = "Add an AvroMetadata object to the avro-metadata table of DynamoDB using the imageId as a key")
     @RequestMapping(value = "/add/{imageId}", method = RequestMethod.POST)
     ResponseEntity<?> addAvroMetadata(@RequestBody String avroMetadata, @PathVariable("imageId") String imageId)
     {
@@ -52,6 +56,7 @@ class AvroMetadataController
      * @param imageId the ID of the image to use as the key when retrieving the AvroMetadata object
      * @return Error if unsuccessful, the retrieved AvroMetadata object and an HTTP OK response code if successful
      */
+    @ApiOperation(value = "Get an AvroMetadata object from the avro-metadata table of DynamoDB using the imageId as a key")
     @RequestMapping(value = "/get/{imageId}", method = RequestMethod.GET)
     ResponseEntity<?> getAvroMetadata(@PathVariable("imageId") String imageId)
     {
@@ -70,6 +75,7 @@ class AvroMetadataController
      * HTTP GET endpoint for retrieving all AvroMetadata objects from the "avro-metadata" table in DynamoDB
      * @return Error if unsuccessful, a list of AvroMetadata objects and an HTTP OK response code if successful
      */
+    @ApiOperation(value = "View a list of AvroMetadata objects stored in the avro-metadata table of DynamoDB")
     @RequestMapping(value = "/list", method = RequestMethod.GET)
     ResponseEntity<?> listAllAvroMetadata()
     {
@@ -88,6 +94,7 @@ class AvroMetadataController
      * @param imageId the ID of the image to use as the key to specify which AvroMetadta object to remove from the "avro-metadata" table
      * @return Error if unsuccessful, a success message and an HTTP OK response code if successful
      */
+    @ApiOperation(value = "Delete an AvroMetadata object using the imageId as the key")
     @RequestMapping(value = "/delete/{imageId}", method = RequestMethod.DELETE)
     ResponseEntity<?> deleteAvroMetadata(@PathVariable("imageId") String imageId)
     {
