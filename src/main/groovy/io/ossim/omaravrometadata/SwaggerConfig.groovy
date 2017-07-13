@@ -7,7 +7,7 @@ import springfox.documentation.service.ApiInfo
 import springfox.documentation.spi.DocumentationType
 import springfox.documentation.spring.web.plugins.Docket
 import springfox.documentation.swagger2.annotations.EnableSwagger2
-import static springfox.documentation.builders.PathSelectors.regex;
+import static springfox.documentation.builders.PathSelectors.regex
 
 @Configuration
 @EnableSwagger2
@@ -21,8 +21,8 @@ class SwaggerConfig
                 .apis(RequestHandlerSelectors.basePackage("io.ossim.omaravrometadata"))
                 .paths(regex("/avroMetadata.*"))
                 .build()
-                .pathMapping("/api")
-                .apiInfo(apiInfo(  ))
+                .useDefaultResponseMessages(false)
+                .apiInfo(apiInfo())
     }
 
     static ApiInfo apiInfo()
