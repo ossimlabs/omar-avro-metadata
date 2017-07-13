@@ -3,6 +3,7 @@ package io.ossim.omaravrometadata
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable
+import com.wordnik.swagger.annotations.ApiModelProperty
 
 /**
  * The AvroMetadata class is used to store the AVRO Metadata of an image.
@@ -20,6 +21,7 @@ class AvroMetadata
      * This is the key for the object being stored in the DynamoDB instance
      * @return the imageId
      */
+    @ApiModelProperty(notes = "Image Id of the AvroMetadata object", required = true)
     @DynamoDBHashKey
     String getImageId()
     {
@@ -31,6 +33,7 @@ class AvroMetadata
      * This is the value of the object being stored in the DynamoDB instance
      * @return the avroMetadata String
      */
+    @ApiModelProperty(notes = "String representation of the AvroMetadata JSON", required = true)
     @DynamoDBAttribute
     String getAvroMetadata()
     {

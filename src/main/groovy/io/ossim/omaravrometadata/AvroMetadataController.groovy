@@ -2,6 +2,8 @@ package io.ossim.omaravrometadata
 
 import com.wordnik.swagger.annotations.Api
 import com.wordnik.swagger.annotations.ApiOperation
+import com.wordnik.swagger.annotations.ApiResponse
+import com.wordnik.swagger.annotations.ApiResponses
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
@@ -33,7 +35,11 @@ class AvroMetadataController
      * @param imageId the ID of the image to use as the key for the AvroMetadata object
      * @return Error if unsuccessful, the added AvroMetadata object and an HTTP OK response code if successful
      */
-    @ApiOperation(value = "Add an AvroMetadata object to the avro-metadata table of DynamoDB using the imageId as a key")
+    @ApiOperation(value = "Add an AvroMetadata object to the avro-metadata table of DynamoDB using the imageId as a key", response = AvroMetadata.class)
+    @ApiResponses(value = [
+        @ApiResponse(code = 200, message = "Successfully added AvroMetadata to the DynamoDB"),
+        @ApiResponse(code = 400, message = "Failed to add AvroMetadata to the DynamoDB")
+    ])
     @RequestMapping(value = "/add/{imageId}", method = RequestMethod.POST)
     ResponseEntity<?> addAvroMetadata(@RequestBody String avroMetadata, @PathVariable("imageId") String imageId)
     {
@@ -56,7 +62,11 @@ class AvroMetadataController
      * @param imageId the ID of the image to use as the key when retrieving the AvroMetadata object
      * @return Error if unsuccessful, the retrieved AvroMetadata object and an HTTP OK response code if successful
      */
-    @ApiOperation(value = "Get an AvroMetadata object from the avro-metadata table of DynamoDB using the imageId as a key")
+    @ApiOperation(value = "Get an AvroMetadata object from the avro-metadata table of DynamoDB using the imageId as a key", response = AvroMetadata.class)
+    @ApiResponses(value = [
+            @ApiResponse(code = 200, message = "Successfully retrieved AvroMetadata object from the DynamoDB"),
+            @ApiResponse(code = 404, message = "Failed to retrieve AvroMetadata object from the DynamoDB")
+    ])
     @RequestMapping(value = "/get/{imageId}", method = RequestMethod.GET)
     ResponseEntity<?> getAvroMetadata(@PathVariable("imageId") String imageId)
     {
@@ -75,7 +85,11 @@ class AvroMetadataController
      * HTTP GET endpoint for retrieving all AvroMetadata objects from the "avro-metadata" table in DynamoDB
      * @return Error if unsuccessful, a list of AvroMetadata objects and an HTTP OK response code if successful
      */
-    @ApiOperation(value = "View a list of AvroMetadata objects stored in the avro-metadata table of DynamoDB")
+    @ApiOperation(value = "View a list of AvroMetadata objects stored in the avro-metadata table of DynamoDB", response = List.class)
+    @ApiResponses(value = [
+            @ApiResponse(code = 200, message = "Successfully retrieved list of AvroMetadata objects from the DynamoDB"),
+            @ApiResponse(code = 404, message = "Failed to retrieve list of AvroMetadata objects from the DynamoDB")
+    ])
     @RequestMapping(value = "/list", method = RequestMethod.GET)
     ResponseEntity<?> listAllAvroMetadata()
     {
@@ -94,7 +108,11 @@ class AvroMetadataController
      * @param imageId the ID of the image to use as the key to specify which AvroMetadta object to remove from the "avro-metadata" table
      * @return Error if unsuccessful, a success message and an HTTP OK response code if successful
      */
-    @ApiOperation(value = "Delete an AvroMetadata object using the imageId as the key")
+    @ApiOperation(value = "Delete an AvroMetadata object using the imageId as the key", response = String.class)
+    @ApiResponses(value = [
+            @ApiResponse(code = 200, message = "Successfully deleted AvroMetadata object from the DynamoDB"),
+            @ApiResponse(code = 404, message = "Failed to find the AvroMetadata obejct to delete from the DynamoDB")
+    ])
     @RequestMapping(value = "/delete/{imageId}", method = RequestMethod.DELETE)
     ResponseEntity<?> deleteAvroMetadata(@PathVariable("imageId") String imageId)
     {
