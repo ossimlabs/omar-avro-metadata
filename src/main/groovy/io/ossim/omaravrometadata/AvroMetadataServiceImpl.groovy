@@ -31,10 +31,15 @@ class AvroMetadataServiceImpl implements AvroMetadataService
     boolean deleteAvroMetadata(String imageId)
     {
         AvroMetadata toDelete = avroMetadataRepository.findByImageId(imageId)
-        if (toDelete == null) return false
-
-        avroMetadataRepository.delete(toDelete)
-        return true
+        if (toDelete == null)
+        {
+            return false
+        }
+        else
+        {
+            avroMetadataRepository.delete(toDelete)
+            return true
+        }
     }
 
     @Override
