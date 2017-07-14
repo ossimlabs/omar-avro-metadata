@@ -1,6 +1,7 @@
 package io.ossim.omaravrometadata
 
 import com.wordnik.swagger.annotations.Api
+import com.wordnik.swagger.annotations.ApiModelProperty
 import com.wordnik.swagger.annotations.ApiOperation
 import com.wordnik.swagger.annotations.ApiParam
 import com.wordnik.swagger.annotations.ApiResponse
@@ -36,13 +37,13 @@ class AvroMetadataController
      * @param imageId the ID of the image to use as the key for the AvroMetadata object
      * @return Error if unsuccessful, the added AvroMetadata object and an HTTP OK response code if successful
      */
-    @ApiOperation(value = "Add an AvroMetadata object to the avro-metadata table of DynamoDB using the imageId as a key")
+    @ApiOperation(value = "Add an AvroMetadata object to the avro-metadata table of DynamoDB using the imageId as a key", response = AvroMetadata.class)
     @ApiResponses(value = [
         @ApiResponse(code = 200, message = "Successfully added AvroMetadata to the DynamoDB"),
         @ApiResponse(code = 400, message = "Failed to add AvroMetadata to the DynamoDB")
     ])
     @RequestMapping(value = "/add/{imageId}", method = RequestMethod.POST)
-    ResponseEntity<?> addAvroMetadata(@ApiParam(value = "AvroMetadata JSON String", required = true)
+    ResponseEntity<AvroMetadata> addAvroMetadata(@ApiParam(value = "AvroMetadata JSON String", required = true)
                                       @RequestBody String avroMetadata,
                                       @ApiParam(value = "Key to use for the AvroMetadata object being added to DynamoDB", required = true)
                                       @PathVariable("imageId") String imageId)
@@ -66,9 +67,9 @@ class AvroMetadataController
      * @param imageId the ID of the image to use as the key when retrieving the AvroMetadata object
      * @return Error if unsuccessful, the retrieved AvroMetadata object and an HTTP OK response code if successful
      */
-    @ApiOperation(value = "Get an AvroMetadata object from the avro-metadata table of DynamoDB using the imageId as a key")
+    @ApiOperation(value = "Get an AvroMetadata object from the avro-metadata table of DynamoDB using the imageId as a key", response = AvroMetadata.class)
     @RequestMapping(value = "/get/{imageId}", method = RequestMethod.GET)
-    ResponseEntity<?> getAvroMetadata(@ApiParam(value = "Key of the AvroMetadata object to retrieve from DynamoDB", required = true)
+    ResponseEntity<AvroMetadata> getAvroMetadata(@ApiParam(value = "Key of the AvroMetadata object to retrieve from DynamoDB", required = true)
                                       @PathVariable("imageId") String imageId)
     {
         log.info("Fetching AvroMetadata with Image ID ${imageId}")
@@ -86,9 +87,9 @@ class AvroMetadataController
      * HTTP GET endpoint for retrieving all AvroMetadata objects from the "avro-metadata" table in DynamoDB
      * @return Error if unsuccessful, a list of AvroMetadata objects and an HTTP OK response code if successful
      */
-    @ApiOperation(value = "View a list of AvroMetadata objects stored in the avro-metadata table of DynamoDB")
+    @ApiOperation(value = "View a list of AvroMetadata objects stored in the avro-metadata table of DynamoDB", response = AvroMetadata.class)
     @RequestMapping(value = "/list", method = RequestMethod.GET)
-    ResponseEntity<?> listAllAvroMetadata()
+    ResponseEntity<AvroMetadata> listAllAvroMetadata()
     {
         log.info("Retrieving all AvroMetadata objects")
         List<AvroMetadata> list = avroMetadataService.listAvroMetadata()

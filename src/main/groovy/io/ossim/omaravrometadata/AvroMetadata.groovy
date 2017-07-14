@@ -13,7 +13,10 @@ import com.wordnik.swagger.annotations.ApiModelProperty
 @DynamoDBTable(tableName = "avro-metadata")
 class AvroMetadata
 {
+    @ApiModelProperty(value = "imageId key", required = true)
     private String imageId
+
+    @ApiModelProperty(value = "avroMetadata value", required = true)
     private String avroMetadata
 
     /**
