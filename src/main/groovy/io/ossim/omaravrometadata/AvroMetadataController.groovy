@@ -84,8 +84,7 @@ class AvroMetadataController
         if (avroMetadata == null)
         {
             log.error("AvroMetadata with Image ID ${imageId} not found.")
-            String dataResponse = "AvroMetadata for imageId ${imageId} not found"
-            return jsonBuilder(statusCode: HttpStatus.OK.value(), status: "success", data: dataResponse)
+            return jsonBuilder(statusCode: HttpStatus.OK.value(), status: "success", data: "AvroMetadata for imageId ${imageId} not found" as String)
         }
         return jsonBuilder(statusCode: HttpStatus.OK.value(), status: "success", data: avroMetadata)
     }
@@ -118,18 +117,13 @@ class AvroMetadataController
     Object deleteAvroMetadata(@ApiParam(value = "Key of the AvroMetadata object to delete from DynamoDB")
                                          @PathVariable("imageId") String imageId)
     {
-        String dataResponse
         log.info("Deleting AvroMetadata matching ${imageId}")
         boolean deleted = avroMetadataService.deleteAvroMetadata(imageId)
 
         if (deleted)
         {
-            dataResponse = "Successfully found and deleted AvroMetadata for ${imageId}"
+            return jsonBuilder(statusCode: HttpStatus.OK.value(), status: "success", data: "Successfully found and deleted AvroMetadata for ${imageId}" as String)
         }
-        else
-        {
-            dataResponse = "Could not find AvroMetadata to delete for ${imageId}"
-        }
-        return jsonBuilder(statusCode: HttpStatus.OK.value(), status: "success", data: dataResponse)
+        return jsonBuilder(statusCode: HttpStatus.OK.value(), status: "success", data: "Could not find AvroMetadata to delete for ${imageId}" as String)
     }
 }
