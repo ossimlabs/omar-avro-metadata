@@ -1,15 +1,16 @@
 package io.ossim.omaravrometadata
 
 import com.wordnik.swagger.annotations.Api
-import com.wordnik.swagger.annotations.ApiModelProperty
 import com.wordnik.swagger.annotations.ApiOperation
 import com.wordnik.swagger.annotations.ApiParam
 import com.wordnik.swagger.annotations.ApiResponse
 import com.wordnik.swagger.annotations.ApiResponses
+import groovy.json.JsonBuilder
+import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
-import org.springframework.http.ResponseEntity
+import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -31,35 +32,40 @@ class AvroMetadataController
     @Autowired
     private AvroMetadataService avroMetadataService
 
+    final JsonBuilder jsonBuilder = new JsonBuilder()
+
+    final JsonSlurper jsonSlurper = new JsonSlurper()
+
     /**
      * HTTP POST endpoint for adding an AvroMetadata obejct to the "avro-metadata" table in DynamoDB
      * @param avroMetadata the JSON representation of the AVRO metadata for the image
      * @param imageId the ID of the image to use as the key for the AvroMetadata object
      * @return Error if unsuccessful, the added AvroMetadata object and an HTTP OK response code if successful
      */
-    @ApiOperation(value = "Add an AvroMetadata object to the avro-metadata table of DynamoDB using the imageId as a key", response = AvroMetadata.class)
+    @ApiOperation(value = "Add an AvroMetadata object to the avro-metadata table of DynamoDB using the imageId as a key")
     @ApiResponses(value = [
         @ApiResponse(code = 200, message = "Successfully added AvroMetadata to the DynamoDB"),
         @ApiResponse(code = 400, message = "Failed to add AvroMetadata to the DynamoDB")
     ])
-    @RequestMapping(value = "/add/{imageId}", method = RequestMethod.POST)
-    ResponseEntity<AvroMetadata> addAvroMetadata(@ApiParam(value = "AvroMetadata JSON String", required = true)
-                                      @RequestBody String avroMetadata,
-                                      @ApiParam(value = "Key to use for the AvroMetadata object being added to DynamoDB", required = true)
-                                      @PathVariable("imageId") String imageId)
+    @RequestMapping(value = "/add", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    Object addAvroMetadata(@ApiParam(value = "AvroMetadata JSON String", required = true)
+                                      @RequestBody String avroMetadata)
     {
         log.info("Adding AvroMetadata from RequestBody to database.")
 
+        final def parsedJson = jsonSlurper.parseText(avroMetadata)
+        final def message = jsonSlurper.parseText(parsedJson.Message)
+
         AvroMetadata toAdd = new AvroMetadata()
-        toAdd.setImageId(imageId)
+        toAdd.setImageId(message.imageId)
         toAdd.setAvroMetadata(avroMetadata)
         AvroMetadata addedAvroMetadata = avroMetadataService.addAvroMetadata(toAdd)
 
         if (addedAvroMetadata == null)
         {
-            return new ResponseEntity("Could not add AvroMetadata to database", HttpStatus.BAD_REQUEST)
+            return jsonBuilder(statusCode: HttpStatus.BAD_REQUEST.value(), status: "failed", data: "Could not add AvroMetadata to database")
         }
-        return new ResponseEntity<AvroMetadata>(addedAvroMetadata, HttpStatus.OK)
+        return jsonBuilder(statusCode: HttpStatus.OK.value(), status: "success", data: addedAvroMetadata)
     }
 
     /**
@@ -67,9 +73,9 @@ class AvroMetadataController
      * @param imageId the ID of the image to use as the key when retrieving the AvroMetadata object
      * @return Error if unsuccessful, the retrieved AvroMetadata object and an HTTP OK response code if successful
      */
-    @ApiOperation(value = "Get an AvroMetadata object from the avro-metadata table of DynamoDB using the imageId as a key", response = AvroMetadata.class)
-    @RequestMapping(value = "/get/{imageId}", method = RequestMethod.GET)
-    ResponseEntity<AvroMetadata> getAvroMetadata(@ApiParam(value = "Key of the AvroMetadata object to retrieve from DynamoDB", required = true)
+    @ApiOperation(value = "Get an AvroMetadata object from the avro-metadata table of DynamoDB using the imageId as a key")
+    @RequestMapping(value = "/get/{imageId}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    Object getAvroMetadata(@ApiParam(value = "Key of the AvroMetadata object to retrieve from DynamoDB", required = true)
                                       @PathVariable("imageId") String imageId)
     {
         log.info("Fetching AvroMetadata with Image ID ${imageId}")
@@ -78,27 +84,27 @@ class AvroMetadataController
         if (avroMetadata == null)
         {
             log.error("AvroMetadata with Image ID ${imageId} not found.")
-            return new ResponseEntity("AvroMetadata with imageId ${imageId} not found", HttpStatus.OK)
+            return jsonBuilder(statusCode: HttpStatus.OK.value(), status: "success", data: "AvroMetadata for imageId ${imageId} not found")
         }
-        return new ResponseEntity<AvroMetadata>(avroMetadata, HttpStatus.OK)
+        return jsonBuilder(statusCode: HttpStatus.OK.value(), status: "success", data: avroMetadata)
     }
 
     /**
      * HTTP GET endpoint for retrieving all AvroMetadata objects from the "avro-metadata" table in DynamoDB
      * @return Error if unsuccessful, a list of AvroMetadata objects and an HTTP OK response code if successful
      */
-    @ApiOperation(value = "View a list of AvroMetadata objects stored in the avro-metadata table of DynamoDB", response = AvroMetadata.class)
-    @RequestMapping(value = "/list", method = RequestMethod.GET)
-    ResponseEntity<AvroMetadata> listAllAvroMetadata()
+    @ApiOperation(value = "View a list of AvroMetadata objects stored in the avro-metadata table of DynamoDB")
+    @RequestMapping(value = "/list", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    Object listAllAvroMetadata()
     {
         log.info("Retrieving all AvroMetadata objects")
         List<AvroMetadata> list = avroMetadataService.listAvroMetadata()
 
         if (list.isEmpty())
         {
-            return new ResponseEntity("No AvroMetadata found in DynamoDB", HttpStatus.OK)
+            return jsonBuilder(statusCode: HttpStatus.OK.value(), status: "success", data: "No AvroMetadata found in DynamoDB")
         }
-        return new ResponseEntity<List<AvroMetadata>>(list, HttpStatus.OK)
+        return jsonBuilder(statusCode: HttpStatus.OK.value(), status: "success", data: list)
     }
 
     /**
@@ -107,8 +113,8 @@ class AvroMetadataController
      * @return Error if unsuccessful, a success message and an HTTP OK response code if successful
      */
     @ApiOperation(value = "Delete an AvroMetadata object using the imageId as the key")
-    @RequestMapping(value = "/delete/{imageId}", method = RequestMethod.DELETE)
-    ResponseEntity<?> deleteAvroMetadata(@ApiParam(value = "Key of the AvroMetadata object to delete from DynamoDB", required = true)
+    @RequestMapping(value = "/delete/{imageId}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
+    Object deleteAvroMetadata(@ApiParam(value = "Key of the AvroMetadata object to delete from DynamoDB")
                                          @PathVariable("imageId") String imageId)
     {
         log.info("Deleting AvroMetadata matching ${imageId}")
@@ -116,8 +122,8 @@ class AvroMetadataController
 
         if (deleted)
         {
-            return new ResponseEntity("Successfully found and deleted AvroMetadata for ${imageId}", HttpStatus.OK)
+            return jsonBuilder(statusCode: HttpStatus.OK.value(), status: "success", data: "Successfully found and deleted AvroMetadata for ${imageId}")
         }
-        return new ResponseEntity("Could not find AvroMetadata to delete for ${imageId}", HttpStatus.OK)
+        return jsonBuilder(statusCode: HttpStatus.OK.value(), status: "success", data: "Could not find AvroMetadata to delete for ${imageId}")
     }
 }
