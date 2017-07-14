@@ -67,10 +67,6 @@ class AvroMetadataController
      * @return Error if unsuccessful, the retrieved AvroMetadata object and an HTTP OK response code if successful
      */
     @ApiOperation(value = "Get an AvroMetadata object from the avro-metadata table of DynamoDB using the imageId as a key")
-    @ApiResponses(value = [
-            @ApiResponse(code = 200, message = "Successfully retrieved AvroMetadata object from the DynamoDB"),
-            @ApiResponse(code = 404, message = "Failed to retrieve AvroMetadata object from the DynamoDB")
-    ])
     @RequestMapping(value = "/get/{imageId}", method = RequestMethod.GET)
     ResponseEntity<?> getAvroMetadata(@ApiParam(value = "Key of the AvroMetadata object to retrieve from DynamoDB", required = true)
                                       @PathVariable("imageId") String imageId)
@@ -81,7 +77,7 @@ class AvroMetadataController
         if (avroMetadata == null)
         {
             log.error("AvroMetadata with Image ID ${imageId} not found.")
-            return new ResponseEntity("AvroMetadata with imageId ${imageId} not found", HttpStatus.NOT_FOUND)
+            return new ResponseEntity("AvroMetadata with imageId ${imageId} not found", HttpStatus.OK)
         }
         return new ResponseEntity<AvroMetadata>(avroMetadata, HttpStatus.OK)
     }
@@ -91,10 +87,6 @@ class AvroMetadataController
      * @return Error if unsuccessful, a list of AvroMetadata objects and an HTTP OK response code if successful
      */
     @ApiOperation(value = "View a list of AvroMetadata objects stored in the avro-metadata table of DynamoDB")
-    @ApiResponses(value = [
-            @ApiResponse(code = 200, message = "Successfully retrieved list of AvroMetadata objects from the DynamoDB"),
-            @ApiResponse(code = 404, message = "Failed to retrieve list of AvroMetadata objects from the DynamoDB")
-    ])
     @RequestMapping(value = "/list", method = RequestMethod.GET)
     ResponseEntity<?> listAllAvroMetadata()
     {
@@ -103,7 +95,7 @@ class AvroMetadataController
 
         if (list.isEmpty())
         {
-            return new ResponseEntity("No AvroMetadata found", HttpStatus.NOT_FOUND)
+            return new ResponseEntity("No AvroMetadata found in DynamoDB", HttpStatus.OK)
         }
         return new ResponseEntity<List<AvroMetadata>>(list, HttpStatus.OK)
     }
@@ -114,10 +106,6 @@ class AvroMetadataController
      * @return Error if unsuccessful, a success message and an HTTP OK response code if successful
      */
     @ApiOperation(value = "Delete an AvroMetadata object using the imageId as the key")
-    @ApiResponses(value = [
-            @ApiResponse(code = 200, message = "Successfully deleted AvroMetadata object from the DynamoDB"),
-            @ApiResponse(code = 404, message = "Failed to find the AvroMetadata obejct to delete from the DynamoDB")
-    ])
     @RequestMapping(value = "/delete/{imageId}", method = RequestMethod.DELETE)
     ResponseEntity<?> deleteAvroMetadata(@ApiParam(value = "Key of the AvroMetadata object to delete from DynamoDB", required = true)
                                          @PathVariable("imageId") String imageId)
@@ -129,6 +117,6 @@ class AvroMetadataController
         {
             return new ResponseEntity("Successfully found and deleted AvroMetadata for ${imageId}", HttpStatus.OK)
         }
-        return new ResponseEntity("No AvroMetadata found for ${imageId}", HttpStatus.NOT_FOUND)
+        return new ResponseEntity("Could not find AvroMetadata to delete for ${imageId}", HttpStatus.OK)
     }
 }
