@@ -23,7 +23,7 @@ CMD ["java", "-server", "-Xms256m", "-Xmx1024m", "-Djava.awt.headless=true", "-X
 Ref: [omar--base](../../../omar-base/docs/install-guide/omar-base/)
 
 ## JAR
-[http://artifacts.radiantbluecloud.com/artifactory/webapp/#/artifacts/browse/tree/General/omar-local/omar-avro-metadata](http://artifacts.radiantbluecloud.com/artifactory/webapp/#/artifacts/browse/tree/General/omar-local/omar-avro-metadata)
+[https://artifactory.ossim.io/artifactory/webapp/#/artifacts/browse/tree/General/omar-local/omar-avro-metadata](https://artifactory.ossim.io/artifactory/webapp/#/artifacts/browse/tree/General/omar-local/omar-avro-metadata)
 
 ##Configuration
 
