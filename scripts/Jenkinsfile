@@ -31,13 +31,19 @@ node(""){
         notifyObj = load "${workspaceDir}/ossim-ci/jenkins/pipeline/notify.groovy"
     }
 
-    stage('SonarQube analysis') {
+    try {
+      stage('SonarQube analysis') {
         withSonarQubeEnv('https://sonarcloud.io') {
           // requires SonarQube Scanner for Gradle 2.1+
           // It's important to add --info because of SONARJNKNS-281
           sh './gradlew --info sonarqube'
         }
       }
+    }
+    catch(e) {
+      // Continue build regardless of SonarQube stage failure.
+      echo e.toString()
+    }
 
     try {
       stage ("Publish App Artifactory")
