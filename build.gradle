@@ -16,6 +16,9 @@ buildscript {
         classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
     }
 }
+plugins {
+    id "org.sonarqube" version "2.2"
+}
 
 apply plugin: 'groovy'
 apply plugin: 'eclipse'
