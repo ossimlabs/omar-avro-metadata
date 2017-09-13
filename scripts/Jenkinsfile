@@ -42,7 +42,7 @@ node(""){
     }
     catch(e) {
       // Continue build regardless of SonarQube stage failure.
-      echo e.toString()
+      echo e.printStackTrace()
     }
 
     try {
