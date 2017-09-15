@@ -33,10 +33,14 @@ node(""){
 
     try {
       stage('SonarQube analysis') {
-          withSonarQubeEnv('SonarCloud Server') {
+          withSonarQubeEnv('sonar_cloud') {
               // requires SonarQube Scanner for Gradle 2.1+
               // It's important to add --info because of SONARJNKNS-281
-              sh './gradlew --info sonarqube'
+              sh """
+                pushd ${workspaceDir}/${appName}/
+                ./gradlew --info sonarqube
+                popd
+              """
           }
       }
     }
