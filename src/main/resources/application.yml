@@ -1,0 +1,20 @@
+# Don't use Cloud Formation
+cloud:
+  aws:
+    credentials:
+      instanceProfile: true
+    region:
+      auto: true
+    stack:
+      auto: false
+
+server:
+  contextPath: /omar-avro-metadata
+
+spring:
+  zipkin:
+    baseUrl: http://omar-zipkin-server:9411/omar-zipkin-server
+  sleuth:
+    enabled: true
+    sampler:
+      percentage: 1.0
