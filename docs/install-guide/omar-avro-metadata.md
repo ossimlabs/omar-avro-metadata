@@ -6,28 +6,6 @@
 ## Purpose
 The Avro Metadata application puts data from an Avro file into a database and returns the data upon request.
 
-## Dockerfile
-```
-FROM omar-base
-MAINTAINER DigitalGlobe-RadiantBlue
-expose 8080
-RUN useradd -u 1001 -r -g 0 -d $HOME -s /sbin/nologin -c 'Default Application User' omar
-RUN mkdir /usr/share/omar
-COPY omar-avro-app-1.0.0-SNAPSHOT.jar /usr/share/omar
-RUN chown -R 1001:0 /usr/share/omar
-RUN chown 1001:0 /usr/share/omar
-RUN chmod -R g+rw /usr/share/omar
-RUN find $HOME -type d -exec chmod g+x {} +
-USER 1001
-WORKDIR /usr/share/omar
-CMD ["java", "-server", "-Xms256m", "-Xmx1024m", "-Djava.awt.headless=true", "-XX:+CMSClassUnloadingEnabled", "-XX:+UseGCOverheadLimit", "-Djava.security.egd=file:/dev/./urandom", "-jar", "omar-avro-metadata-app-1.0.0-SNAPSHOT.jar"]
-```
-
-Ref: [omar-base](../../../omar-base/docs/install-guide/omar-base/)
-
-## JAR
-https://artifactory.ossim.io/artifactory/webapp/#/artifacts/browse/tree/General/omar-local/omar-avro-metadata
-
 ## Installation in Openshift
 
 **Assumption:** The omar-avro-metadata-app docker image is pushed into the OpenShift server's internal docker registry and available to the project.
