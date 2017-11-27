@@ -1,13 +1,19 @@
+---
 # Don't use Cloud Formation
 cloud:
   aws:
     credentials:
+      # If true, authenticates AWS credentials using the EC2 machine's instance profile instead of AWS keys.
       instanceProfile: true
     region:
+      # If true, automatically detects the AWS region based on the EC2 machine instance profile.
       auto: true
     stack:
+      # If true, automatically configures the AWS cloud stack using CloudFormation.
+      # This is set to false, as we do not use CloudFormation.
       auto: false
 
+# Set the context path of the application
 server:
   contextPath: /omar-avro-metadata
 
