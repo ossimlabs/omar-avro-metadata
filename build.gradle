@@ -5,10 +5,8 @@ buildscript {
         dockerStatementsOverride = {
         [
           "FROM ${project.dockerNamespaceUrl}${project.ext.baseImage}:${project.dockerAppTag}",
-          "MAINTAINER DigitalGlobe-RadiantBlue",
-          """LABEL com.digitalglobe.version="" """,
 	      """ENV SPRING_CLOUD_CONFIG_ENABLED=true \\
-                       SPRING_CLOUD_DISCOVERY_ENABLED=true """,
+    SPRING_CLOUD_DISCOVERY_ENABLED=true """,
           "COPY ${project.name}-${buildVersion}-${buildVersionTag}.jar /home/omar",
           "EXPOSE 8080",
          "WORKDIR /home/omar",
