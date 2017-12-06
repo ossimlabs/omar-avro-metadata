@@ -1,0 +1,118 @@
+apiVersion: v1
+kind: DeploymentConfig
+metadata:
+  name: omar-avro-metadata-app
+  namespace: omar-dev
+  selfLink: /oapi/v1/namespaces/omar-dev/deploymentconfigs/omar-avro-metadata-app
+  uid: dcbabda6-82c2-11e7-ba3b-0e704fd9c8b2
+  resourceVersion: '8863130'
+  generation: 140
+  creationTimestamp: '2017-08-16T20:38:29Z'
+  labels:
+    app: omar-openshift
+  annotations:
+    openshift.io/generated-by: OpenShiftNewApp
+spec:
+  strategy:
+    type: Rolling
+    rollingParams:
+      updatePeriodSeconds: 1
+      intervalSeconds: 1
+      timeoutSeconds: 600
+      maxUnavailable: 25%
+      maxSurge: 25%
+    resources: {}
+    activeDeadlineSeconds: 21600
+  triggers:
+    - type: ConfigChange
+    - type: ImageChange
+      imageChangeParams:
+        automatic: true
+        containerNames:
+          - omar-avro-metadata-app
+        from:
+          kind: ImageStreamTag
+          namespace: o2
+          name: 'omar-avro-metadata:latest'
+        lastTriggeredImage: >-
+          172.30.181.173:5000/o2/omar-avro-metadata@sha256:b0fef253289b1bb92ee1be262a6ace679f9cbddd38a7df43c5866882c6fd6d5c
+  replicas: 1
+  test: false
+  selector:
+    app: omar-openshift
+    deploymentconfig: omar-avro-metadata-app
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: omar-openshift
+        deploymentconfig: omar-avro-metadata-app
+      annotations:
+        openshift.io/generated-by: OpenShiftNewApp
+    spec:
+      containers:
+        - name: omar-avro-metadata-app
+          image: >-
+            172.30.181.173:5000/o2/omar-avro-metadata@sha256:b0fef253289b1bb92ee1be262a6ace679f9cbddd38a7df43c5866882c6fd6d5c
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: 'production,dev'
+            - name: SPRING_CLOUD_CONFIG_LABEL
+              value: master
+          resources: {}
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 60
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 30
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          terminationMessagePath: /dev/termination-log
+          imagePullPolicy: Always
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+status:
+  latestVersion: 135
+  observedGeneration: 140
+  replicas: 1
+  updatedReplicas: 1
+  availableReplicas: 1
+  unavailableReplicas: 0
+  details:
+    message: image change
+    causes:
+      - type: ImageChange
+        imageTrigger:
+          from:
+            kind: ImageStreamTag
+            namespace: o2
+            name: 'omar-avro-metadata:latest'
+  conditions:
+    - type: Available
+      status: 'True'
+      lastUpdateTime: '2017-11-27T21:04:45Z'
+      lastTransitionTime: '2017-11-27T21:04:45Z'
+      message: Deployment config has minimum availability.
+    - type: Progressing
+      status: 'True'
+      lastUpdateTime: '2017-11-30T12:32:10Z'
+      lastTransitionTime: '2017-11-30T12:32:09Z'
+      reason: NewReplicationControllerAvailable
+      message: >-
+        replication controller "omar-avro-metadata-app-135" successfully rolled
+        out
+  readyReplicas: 1
