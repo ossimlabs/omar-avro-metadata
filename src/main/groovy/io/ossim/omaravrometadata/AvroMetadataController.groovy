@@ -9,6 +9,7 @@ import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.PathVariable
@@ -31,6 +32,9 @@ class AvroMetadataController
      */
     @Autowired
     private AvroMetadataService avroMetadataService
+
+    @Value('${omar.avro.metadata.imageIdKey:imageId}')
+    String imageIdKey
 
     final JsonBuilder jsonBuilder = new JsonBuilder()
 
@@ -57,7 +61,7 @@ class AvroMetadataController
         final def message = jsonSlurper.parseText(parsedJson.Message)
 
         AvroMetadata toAdd = new AvroMetadata()
-        toAdd.setImageId(message.imageId)
+        toAdd.setImageId(message."${imageIdKey}")
         toAdd.setAvroMetadata(avroMetadata)
         AvroMetadata addedAvroMetadata = avroMetadataService.addAvroMetadata(toAdd)
 

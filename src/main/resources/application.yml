@@ -17,10 +17,8 @@ cloud:
 #server:
 #  contextPath: /omar-avro-metadata
 
-spring:
-  zipkin:
-    baseUrl: http://omar-zipkin-server:9411/omar-zipkin-server
-  sleuth:
-    enabled: true
-    sampler:
-      percentage: 1.0
+omar:
+  avro:
+    metadata:
+      imageIdKey: imageId
+      tableName: avro-metadata
