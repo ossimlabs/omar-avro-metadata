@@ -2,11 +2,13 @@ package io.ossim.omaravrometadata
 
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
+import groovy.util.logging.Slf4j
 
 /**
  * Implements the methods in AvroMetadataService by calling the AvroMetadataRepository to interface with the database
  */
 @Service
+@Slf4j
 class AvroMetadataServiceImpl implements AvroMetadataService
 {
     /**
@@ -18,7 +20,16 @@ class AvroMetadataServiceImpl implements AvroMetadataService
     @Override
     AvroMetadata addAvroMetadata(AvroMetadata avroMetadata)
     {
-        avroMetadataRepository.save(avroMetadata)
+        try
+        {
+            log.info("Saving ${avroMetadata?.imageId} metadata to database")
+            avroMetadataRepository.save(avroMetadata)
+        }
+        catch (Exception e)
+        {
+            log.error("Failed to add metadata for ${avroMetadata?.imageId}")
+            log.error(e.printStackTrace())
+        }
     }
 
     @Override

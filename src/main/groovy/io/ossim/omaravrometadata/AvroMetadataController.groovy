@@ -61,8 +61,6 @@ class AvroMetadataController
         final def message = jsonSlurper.parseText(parsedJson.Message)
 
         AvroMetadata toAdd = new AvroMetadata()
-        println "imageIdKey: ${imageIdKey}"
-        println message."${imageIdKey}"
         toAdd.setImageId(message."${imageIdKey}")
         toAdd.setAvroMetadata(avroMetadata)
         AvroMetadata addedAvroMetadata = avroMetadataService.addAvroMetadata(toAdd)
