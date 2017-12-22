@@ -20,5 +20,5 @@ cloud:
 omar:
   avro:
     metadata:
-      imageIdKey: imageId
+      imageId: imageId
       tableName: avro-metadata
