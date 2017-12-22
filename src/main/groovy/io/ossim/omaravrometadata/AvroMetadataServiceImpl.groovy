@@ -20,9 +20,10 @@ class AvroMetadataServiceImpl implements AvroMetadataService
     @Override
     AvroMetadata addAvroMetadata(AvroMetadata avroMetadata)
     {
+        AvroMetadata toReturn = null
         try
         {
-            avroMetadataRepository.save(avroMetadata)
+            toReturn = avroMetadataRepository.save(avroMetadata)
             log.info("Saved ${avroMetadata?.imageId} metadata to database")
         }
         catch (Exception e)
@@ -30,6 +31,8 @@ class AvroMetadataServiceImpl implements AvroMetadataService
             log.error("Failed to add metadata for ${avroMetadata?.imageId}")
             log.error(e.printStackTrace())
         }
+
+        return toReturn
     }
 
     @Override
