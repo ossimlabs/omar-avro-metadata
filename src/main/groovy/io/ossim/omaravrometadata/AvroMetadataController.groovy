@@ -33,7 +33,7 @@ class AvroMetadataController
     @Autowired
     private AvroMetadataService avroMetadataService
 
-    @Value('${omar.avro.metadata.imageId:imageId}')
+    @Value('${omar.avro.metadata.imageIdKey:imageId}')
     String imageIdKey
 
     final JsonBuilder jsonBuilder = new JsonBuilder()
