@@ -22,8 +22,8 @@ class AvroMetadataServiceImpl implements AvroMetadataService
     {
         try
         {
-            log.info("Saving ${avroMetadata?.imageId} metadata to database")
             avroMetadataRepository.save(avroMetadata)
+            log.info("Saved ${avroMetadata?.imageId} metadata to database")
         }
         catch (Exception e)
         {
