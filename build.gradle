@@ -1,6 +1,11 @@
 buildscript {
+    if(System.env.OMAR_COMMON_PROPERTIES)
+    {
+        apply from: System.env.OMAR_COMMON_PROPERTIES
+    }
+ 
     ext {
-        springBootVersion = '1.5.9.RELEASE'
+        springBootVersion = "${springBootV}"
         baseImage = "omar-base"
         dockerStatementsOverride = {
         [
@@ -13,10 +18,6 @@ buildscript {
          "CMD java -server -Xms256m -Xmx1024m -Djava.awt.headless=true -XX:+CMSClassUnloadingEnabled -XX:+UseGCOverheadLimit -XX:+UnlockExperimentalVMOptions  -XX:+UseCGroupMemoryLimitForHeap -XX:MaxRAMFraction=1 -Djava.security.egd=file:/dev/./urandom -jar /home/omar/${project.name}-${buildVersion}-${buildVersionTag}.jar"
          ]
        }
-    }
-    if(System.env.OMAR_COMMON_PROPERTIES)
-    {
-        apply from: System.env.OMAR_COMMON_PROPERTIES
     }
     repositories {
         mavenLocal()
@@ -50,7 +51,7 @@ repositories {
 
 
 ext {
-    springCloudVersion = 'Dalston.RELEASE'
+    springCloudVersion = "${springCloudDependencyV}"
 }
 
 dependencies {
