@@ -1,4 +1,7 @@
 buildscript {
+    ext {
+        baseImage = "omar-base"
+    }
     if(System.env.OMAR_COMMON_PROPERTIES)
     {
         apply from: System.env.OMAR_COMMON_PROPERTIES
@@ -6,7 +9,6 @@ buildscript {
  
     ext {
         springBootVersion = "${springBootV}"
-        baseImage = "omar-base"
         dockerStatementsOverride = {
         [
           "FROM ${project.dockerNamespaceUrl}${project.ext.baseImage}:${project.dockerAppTag}",
