@@ -1,7 +1,14 @@
 buildscript {
     ext {
-        springBootVersion = '1.5.3.RELEASE'
         baseImage = "omar-base"
+    }
+    if(System.env.OMAR_COMMON_PROPERTIES)
+    {
+        apply from: System.env.OMAR_COMMON_PROPERTIES
+    }
+ 
+    ext {
+        springBootVersion = "${springBootV}"
         dockerStatementsOverride = {
         [
           "FROM ${project.dockerNamespaceUrl}${project.ext.baseImage}:${project.dockerAppTag}",
@@ -14,10 +21,6 @@ buildscript {
          ]
        }
     }
-    if(System.env.OMAR_COMMON_PROPERTIES)
-    {
-        apply from: System.env.OMAR_COMMON_PROPERTIES
-    }
     repositories {
         mavenLocal()
         maven { url "${ossimMavenProxy}" }
@@ -26,6 +29,10 @@ buildscript {
     dependencies {
         classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
     }
+}
+
+plugins {
+  id "com.github.ben-manes.versions" version "0.17.0"
 }
 
 apply plugin: 'groovy'
@@ -46,19 +53,19 @@ repositories {
 
 
 ext {
-    springCloudVersion = 'Dalston.RELEASE'
+    springCloudVersion = "${springCloudDependencyV}"
 }
 
 dependencies {
-    compile "de.codecentric:spring-boot-admin-starter-client:1.5.4"
+    compile "de.codecentric:spring-boot-admin-starter-client:${springBootAdminStarterClientV}"
     compile('org.springframework.boot:spring-boot-starter')
     compile('org.springframework.boot:spring-boot-starter-web')
     compile('org.springframework.cloud:spring-cloud-starter-aws')
     compile('org.springframework.cloud:spring-cloud-starter-config')
 //    compile('org.springframework.cloud:spring-cloud-starter-zipkin')
 
-    compile('com.github.derjust:spring-data-dynamodb:4.5.0')
-    compile('com.amazonaws:aws-java-sdk-dynamodb:1.11.93')
+    compile("com.github.derjust:spring-data-dynamodb:${springDataDynamodbV}")
+    compile("com.amazonaws:aws-java-sdk-dynamodb:${javaSdkDynamodbV}")
 
     compile('org.codehaus.groovy:groovy')
     compile('org.codehaus.groovy:groovy-json')
