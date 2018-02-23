@@ -64,7 +64,7 @@ dependencies {
     compile('org.springframework.cloud:spring-cloud-starter-config')
 //    compile('org.springframework.cloud:spring-cloud-starter-zipkin')
 
-    compile("com.github.derjust:spring-data-dynamodb:4.5.0")
+    compile("com.github.derjust:spring-data-dynamodb:${springDataDynamodbV}")
     compile("com.amazonaws:aws-java-sdk-dynamodb:1.11.93")
 
     compile('org.codehaus.groovy:groovy')
