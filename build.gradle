@@ -11,9 +11,9 @@ buildscript {
         springBootVersion = "${springBootV}"
     }
     repositories {
+        mavenLocal()
         maven { url "${ossimMavenProxy}" }
         if( !System.env.WWW_CONNECTED || Boolean.parseBoolean( System.env.WWW_CONNECTED ) ) {
-            mavenLocal()
             maven { url "https://repo.grails.org/grails/core" }
         }
     }
@@ -23,7 +23,6 @@ buildscript {
 }
 
 plugins {
-    id "com.github.ben-manes.versions" version "0.17.0"
     id "org.sonarqube" version "2.6.2"
 }
 
@@ -38,9 +37,9 @@ apply plugin: "maven"
 sourceCompatibility = 1.8
 
 repositories {
+    mavenLocal()
     maven { url "${ossimMavenProxy}" }
     if( !System.env.WWW_CONNECTED || Boolean.parseBoolean( System.env.WWW_CONNECTED ) ) {
-        mavenLocal()
         mavenCentral()
     }
 }
