@@ -11,9 +11,9 @@ buildscript {
         springBootVersion = "${springBootV}"
     }
     repositories {
+        mavenLocal()
         maven { url "${ossimMavenProxy}" }
         if( !System.env.WWW_CONNECTED || Boolean.parseBoolean( System.env.WWW_CONNECTED ) ) {
-            mavenLocal()
             maven { url "https://repo.grails.org/grails/core" }
         }
     }
@@ -38,9 +38,9 @@ apply plugin: "maven"
 sourceCompatibility = 1.8
 
 repositories {
+    mavenLocal()
     maven { url "${ossimMavenProxy}" }
     if( !System.env.WWW_CONNECTED || Boolean.parseBoolean( System.env.WWW_CONNECTED ) ) {
-        mavenLocal()
         mavenCentral()
     }
 }
