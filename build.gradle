@@ -1,6 +1,17 @@
 buildscript {
     ext {
         baseImage = "omar-base"
+        dockerStatementsOverride = {
+           [
+              "FROM ${project.dockerNamespaceUrl}${project.ext.baseImage}:${project.dockerAppTag}",
+              "COPY ${project.name}-${buildVersion}-${buildVersionTag}.jar \$HOME/",
+              "ENV SPRING_CLOUD_CONFIG_ENABLED=true \\
+                SPRING_CLOUD_DISCOVERY_ENABLED=true",
+              "EXPOSE 8080",
+              "WORKDIR /home/omar",
+              "CMD java -Xms256m -Xmx1024m -Dspring.profiles.active=production -Djava.security.egd=file:/dev/./urandom -jar ./${project.name}-${buildVersion}-${buildVersionTag}.jar"
+           ]
+     }
     }
     if(System.env.OMAR_COMMON_PROPERTIES)
     {
