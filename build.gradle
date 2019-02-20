@@ -1,21 +1,12 @@
 buildscript {
-    ext {
-        baseImage = "omar-base"
-    }
-    if(System.env.OMAR_COMMON_PROPERTIES)
-    {
-        apply from: System.env.OMAR_COMMON_PROPERTIES
-    }
-
-    ext {
-        springBootVersion = "${springBootV}"
-    }
     repositories {
         mavenLocal()
-        maven { url "${ossimMavenProxy}" }
+        maven { url ossimMavenProxy }
     }
     dependencies {
-        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.5.10.RELEASE")
+        classpath 'com.bmuschko:gradle-docker-plugin:3.0.12'
+        classpath 'io.ossim:gradleDefaults:1.4-SNAPSHOT'
     }
 }
 
@@ -30,13 +21,22 @@ apply plugin: 'org.springframework.boot'
 apply plugin: "idea"
 apply plugin: "java"
 apply plugin: "maven-publish"
-apply plugin: "maven"
+
+io.ossim.gradleDefaults.Variables.setAdditionalVariables(project)
+io.ossim.gradleDefaults.Variables.setVersionVariables(project)
+dockerBuildDir="${rootProject.projectDir}/docker"
+version "${buildVersion}-${buildVersionTag}"
+jarDestination = "${projectDir}/build/libs/${project.name}-${version}.jar"
+io.ossim.gradleDefaults.Publications.addPublication(project, groupName, project.name, "${buildVersion}-${buildVersionTag}")
+io.ossim.gradleDefaults.Publications.addRepository(project, mavenPublishUrl, mavenRepoUsername, mavenRepoPassword)
+io.ossim.gradleDefaults.Docker.addDockerTasks(project, dockerRegistryUrl, dockerRegistryUsername, dockerRegistryPassword, project.name, dockerImageTag, dockerBuildDir, jarDestination, ["BASE_IMAGE": dockerBaseImage])
+io.ossim.gradleDefaults.Openshift.addOpenshiftTasks(project, openshiftUrl, openshiftUsername, openshiftPassword, openshiftProjectName, openshiftServiceName,  dockerRegistryUrl, project.name, dockerImageTag)
 
 sourceCompatibility = 1.8
 
 repositories {
     mavenLocal()
-    maven { url "${ossimMavenProxy}" }
+    maven { url ossimMavenProxy }
 }
 
 ext {
@@ -65,12 +65,5 @@ dependencies {
 dependencyManagement {
     imports {
         mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
-    }
-}
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-        }
     }
 }
