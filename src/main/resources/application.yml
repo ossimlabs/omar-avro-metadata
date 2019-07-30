@@ -13,12 +13,12 @@ cloud:
       # This is set to false, as we do not use CloudFormation.
       auto: false
 
-# Set the context path of the application
-server:
-  contextPath: /omar-avro-metadata
-
 omar:
   avro:
     metadata:
-      imageIdKey: imageId
+      imageIdKey: Image_Id
       tableName: avro-metadata
+
+# Set the context path of the application
+server:
+  contextPath: /omar-avro-metadata
