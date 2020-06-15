@@ -24,6 +24,12 @@ podTemplate(
       name: 'builder',
       command: 'cat',
       ttyEnabled: true
+    ),
+    containerTemplate(
+      image: "${DOCKER_REGISTRY_DOWNLOAD_URL}/alpine/helm:3.2.3",
+      name: 'helm',
+      command: 'cat',
+      ttyEnabled: true
     )
   ],
   volumes: [
@@ -91,6 +97,21 @@ podTemplate(
               docker push "${DOCKER_REGISTRY_PUBLIC_UPLOAD_URL}"/omar-mensa-app:${BRANCH_NAME}
           """
           }
+        }
+      }
+    }    
+    stage('Package chart'){
+      container('helm') {
+        sh """
+            mkdir packaged-chart
+            helm package -d packaged-chart chart
+          """
+      }
+    }
+    stage('Upload chart'){
+      container('builder') {
+        withCredentials([usernameColonPassword(credentialsId: 'helmCredentials', variable: 'HELM_CREDENTIALS')]) {
+          sh "curl -u ${HELM_CREDENTIALS} ${HELM_UPLOAD_URL} --upload-file packaged-chart/*.tgz -v"
         }
       }
     }
