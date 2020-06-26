@@ -1,95 +1,123 @@
 properties([
     parameters ([
-        string(name: 'BUILD_NODE', defaultValue: 'omar-build', description: 'The build node to run on'),
-        booleanParam(name: 'CLEAN_WORKSPACE', defaultValue: true, description: 'Clean the workspace at the end of the run')
+        booleanParam(name: 'CLEAN_WORKSPACE', defaultValue: true, description: 'Clean the workspace at the end of the run'),
+        string(name: 'DOCKER_REGISTRY_DOWNLOAD_URL', defaultValue: 'nexus-docker-private-group.ossim.io', description: 'Repository of docker images')
     ]),
     pipelineTriggers([
             [$class: "GitHubPushTrigger"]
     ]),
-    [$class: 'GithubProjectProperty', displayName: '', projectUrlStr: 'https://github.com/ossimlabs/omar-avro-metadata'],
+    [$class: 'GithubProjectProperty', displayName: '', projectUrlStr: 'https://github.com/ossimlabs/omar-mensa'],
     buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '3', daysToKeepStr: '', numToKeepStr: '20')),
     disableConcurrentBuilds()
 ])
+podTemplate(
+  containers: [
+    containerTemplate(
+      name: 'docker',
+      image: 'docker:19.03.8',
+      ttyEnabled: true,
+      command: 'cat',
+      privileged: true
+    ),
+    containerTemplate(
+      image: "${DOCKER_REGISTRY_DOWNLOAD_URL}/omar-builder:latest",
+      name: 'builder',
+      command: 'cat',
+      ttyEnabled: true
+    ),
+    containerTemplate(
+      image: "${DOCKER_REGISTRY_DOWNLOAD_URL}/alpine/helm:3.2.3",
+      name: 'helm',
+      command: 'cat',
+      ttyEnabled: true
+    )
+  ],
+  volumes: [
+    hostPathVolume(
+      hostPath: '/var/run/docker.sock',
+      mountPath: '/var/run/docker.sock'
+    ),
+  ]
+)
+{
+  node(POD_LABEL){
 
-node("${BUILD_NODE}"){
+      stage("Checkout branch $BRANCH_NAME")
+      {
+          checkout(scm)
+      }
 
-    stage("Checkout branch $BRANCH_NAME")
-    {
-        checkout(scm)
-    }
-
-    stage("Load Variables")
-    {
+      stage("Load Variables")
+      {
         withCredentials([string(credentialsId: 'o2-artifact-project', variable: 'o2ArtifactProject')]) {
-            step ([$class: "CopyArtifact",
-                projectName: o2ArtifactProject,
-                filter: "common-variables.groovy",
-                flatten: true])
+          step ([$class: "CopyArtifact",
+            projectName: o2ArtifactProject,
+            filter: "common-variables.groovy",
+            flatten: true])
+          }
+          load "common-variables.groovy"
+      }
+      stage('Build') {
+        container('builder') {
+          sh """
+          ./gradlew assemble \
+              -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
+          ./gradlew copyJarToDockerDir \
+              -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
+          """
+            archiveArtifacts "build/libs/*.jar"
         }
-
-        load "common-variables.groovy"
+      }
+    stage ("Publish Nexus"){	
+      container('builder'){
+          withCredentials([[$class: 'UsernamePasswordMultiBinding',
+                          credentialsId: 'nexusCredentials',
+                          usernameVariable: 'MAVEN_REPO_USERNAME',
+                          passwordVariable: 'MAVEN_REPO_PASSWORD']])
+          {
+            sh """
+            ./gradlew publish \
+                -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
+            """
+          }
+        }
     }
-
-    stage ("Assemble") {
+    stage('Docker build') {
+      container('docker') {
+        withDockerRegistry(credentialsId: 'dockerCredentials', url: "https://${DOCKER_REGISTRY_DOWNLOAD_URL}") {  //TODO
+          sh """
+            docker build --build-arg BASE_IMAGE=ossim-runtime-alpine-minimal -t "${DOCKER_REGISTRY_PUBLIC_UPLOAD_URL}"/omar-mensa-app:${BRANCH_NAME} ./docker
+          """
+        }
+      }
+      stage('Docker push'){
+        container('docker') {
+          withDockerRegistry(credentialsId: 'dockerCredentials', url: "https://${DOCKER_REGISTRY_PUBLIC_UPLOAD_URL}") {
+          sh """
+              docker push "${DOCKER_REGISTRY_PUBLIC_UPLOAD_URL}"/omar-mensa-app:${BRANCH_NAME}
+          """
+          }
+        }
+      }
+    }    
+    stage('Package chart'){
+      container('helm') {
         sh """
-        gradle assemble \
-            -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
-        """
-        archiveArtifacts "build/libs/*.jar"
+            mkdir packaged-chart
+            helm package -d packaged-chart chart
+          """
+      }
     }
-
-    stage ("Publish Nexus")
-    {
-        withCredentials([[$class: 'UsernamePasswordMultiBinding',
-                        credentialsId: 'nexusCredentials',
-                        usernameVariable: 'MAVEN_REPO_USERNAME',
-                        passwordVariable: 'MAVEN_REPO_PASSWORD']])
-        {
-            sh """
-            gradle publish \
-                -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
-            """
+    stage('Upload chart'){
+      container('builder') {
+        withCredentials([usernameColonPassword(credentialsId: 'helmCredentials', variable: 'HELM_CREDENTIALS')]) {
+          sh "curl -u ${HELM_CREDENTIALS} ${HELM_UPLOAD_URL} --upload-file packaged-chart/*.tgz -v"
         }
+      }
     }
-
-    stage ("Publish Docker App")
-    {
-        withCredentials([[$class: 'UsernamePasswordMultiBinding',
-                        credentialsId: 'dockerCredentials',
-                        usernameVariable: 'DOCKER_REGISTRY_USERNAME',
-                        passwordVariable: 'DOCKER_REGISTRY_PASSWORD']])
-        {
-            // Run all tasks on the app. This includes pushing to OpenShift and S3.
-            sh """
-            gradle pushDockerImage \
-                -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
-            """
-        }
+    stage("Clean Workspace"){
+      if ("${CLEAN_WORKSPACE}" == "true")
+        step([$class: 'WsCleanup'])
     }
-
-    try {
-        stage ("OpenShift Tag Image")
-        {
-            withCredentials([[$class: 'UsernamePasswordMultiBinding',
-                            credentialsId: 'openshiftCredentials',
-                            usernameVariable: 'OPENSHIFT_USERNAME',
-                            passwordVariable: 'OPENSHIFT_PASSWORD']])
-            {
-                // Run all tasks on the app. This includes pushing to OpenShift and S3.
-                sh """
-                    gradle openshiftTagImage \
-                        -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
-
-                """
-            }
-        }
-    } catch (e) {
-        echo e.toString()
-    }
-  
-    stage("Clean Workspace")
-    {
-        if ("${CLEAN_WORKSPACE}" == "true")
-            step([$class: 'WsCleanup'])
-    }
+  }
 }
