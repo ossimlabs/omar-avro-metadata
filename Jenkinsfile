@@ -1,123 +1,131 @@
 properties([
     parameters ([
-        booleanParam(name: 'CLEAN_WORKSPACE', defaultValue: true, description: 'Clean the workspace at the end of the run'),
-        string(name: 'DOCKER_REGISTRY_DOWNLOAD_URL', defaultValue: 'nexus-docker-private-group.ossim.io', description: 'Repository of docker images')
+        string(name: 'BUILD_NODE', defaultValue: 'omar-build', description: 'The build node to run on'),
+        booleanParam(name: 'CLEAN_WORKSPACE', defaultValue: true, description: 'Clean the workspace at the end of the run')
     ]),
     pipelineTriggers([
             [$class: "GitHubPushTrigger"]
     ]),
-    [$class: 'GithubProjectProperty', displayName: '', projectUrlStr: 'https://github.com/ossimlabs/omar-mensa'],
+    [$class: 'GithubProjectProperty', displayName: '', projectUrlStr: 'https://github.com/ossimlabs/omar-avro-metadata'],
     buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '3', daysToKeepStr: '', numToKeepStr: '20')),
     disableConcurrentBuilds()
 ])
-podTemplate(
-  containers: [
-    containerTemplate(
-      name: 'docker',
-      image: 'docker:19.03.8',
-      ttyEnabled: true,
-      command: 'cat',
-      privileged: true
-    ),
-    containerTemplate(
-      image: "${DOCKER_REGISTRY_DOWNLOAD_URL}/omar-builder:latest",
-      name: 'builder',
-      command: 'cat',
-      ttyEnabled: true
-    ),
-    containerTemplate(
-      image: "${DOCKER_REGISTRY_DOWNLOAD_URL}/alpine/helm:3.2.3",
-      name: 'helm',
-      command: 'cat',
-      ttyEnabled: true
-    )
-  ],
-  volumes: [
-    hostPathVolume(
-      hostPath: '/var/run/docker.sock',
-      mountPath: '/var/run/docker.sock'
-    ),
-  ]
-)
-{
-  node(POD_LABEL){
 
-      stage("Checkout branch $BRANCH_NAME")
-      {
-          checkout(scm)
-      }
+node('omar-build'){
 
-      stage("Load Variables")
-      {
-        withCredentials([string(credentialsId: 'o2-artifact-project', variable: 'o2ArtifactProject')]) {
-          step ([$class: "CopyArtifact",
-            projectName: o2ArtifactProject,
-            filter: "common-variables.groovy",
-            flatten: true])
+    stage("Checkout branch")
+    {
+        scmVars = checkout(scm)
+        
+        GIT_BRANCH_NAME = scmVars.GIT_BRANCH
+        BRANCH_NAME = """${sh(returnStdout: true, script: "echo ${GIT_BRANCH_NAME} | awk -F'/' '{print \$2}'").trim()}"""
+        sh """
+        touch buildVersion.txt
+        grep buildVersion gradle.properties | cut -d "=" -f2 > "buildVersion.txt"
+        """
+        preVERSION = readFile "buildVersion.txt"
+        VERSION = preVERSION.substring(0, preVERSION.indexOf('\n'))
+
+        GIT_TAG_NAME = "omar-avro-metadata" + "-" + VERSION  //webhook stuff
+        ARTIFACT_NAME = "ArtifactName"
+
+        script {
+          if (BRANCH_NAME != 'master') {
+            buildName "${VERSION} - ${BRANCH_NAME}-SNAPSHOT"
+          } else {
+            buildName "${VERSION} - ${BRANCH_NAME}"
           }
-          load "common-variables.groovy"
-      }
-      stage('Build') {
-        container('builder') {
-          sh """
-          ./gradlew assemble \
-              -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
-          ./gradlew copyJarToDockerDir \
-              -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
-          """
-            archiveArtifacts "build/libs/*.jar"
         }
-      }
-    stage ("Publish Nexus"){	
-      container('builder'){
-          withCredentials([[$class: 'UsernamePasswordMultiBinding',
-                          credentialsId: 'nexusCredentials',
-                          usernameVariable: 'MAVEN_REPO_USERNAME',
-                          passwordVariable: 'MAVEN_REPO_PASSWORD']])
-          {
+    }
+
+    stage("Load Variables")
+    {
+        withCredentials([string(credentialsId: 'o2-artifact-project', variable: 'o2ArtifactProject')]) {
+            step ([$class: "CopyArtifact",
+                projectName: o2ArtifactProject,
+                filter: "common-variables.groovy",
+                flatten: true])
+        }
+
+        load "common-variables.groovy"
+        
+        switch (BRANCH_NAME) {
+        case "master":
+          TAG_NAME = VERSION
+          break
+
+        case "dev":
+          TAG_NAME = "latest"
+          break
+
+        default:
+          TAG_NAME = BRANCH_NAME
+          break
+        }
+
+        DOCKER_IMAGE_PATH = "${DOCKER_REGISTRY_PRIVATE_UPLOAD_URL}/omar-wms"
+    }
+
+    stage ("Assemble") {
+        sh """
+        gradle assemble \
+            -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
+        """
+        archiveArtifacts "build/libs/*.jar"
+    }
+
+    stage ("Publish Nexus")
+    {
+        withCredentials([[$class: 'UsernamePasswordMultiBinding',
+                        credentialsId: 'nexusCredentials',
+                        usernameVariable: 'MAVEN_REPO_USERNAME',
+                        passwordVariable: 'MAVEN_REPO_PASSWORD']])
+        {
             sh """
-            ./gradlew publish \
+            gradle publish \
                 -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
             """
-          }
         }
     }
-    stage('Docker build') {
-      container('docker') {
-        withDockerRegistry(credentialsId: 'dockerCredentials', url: "https://${DOCKER_REGISTRY_DOWNLOAD_URL}") {  //TODO
-          sh """
-            docker build --build-arg BASE_IMAGE=ossim-runtime-alpine-minimal -t "${DOCKER_REGISTRY_PUBLIC_UPLOAD_URL}"/omar-mensa-app:${BRANCH_NAME} ./docker
-          """
+
+    stage ("Publish Docker App")
+    {
+        withCredentials([[$class: 'UsernamePasswordMultiBinding',
+                        credentialsId: 'dockerCredentials',
+                        usernameVariable: 'DOCKER_REGISTRY_USERNAME',
+                        passwordVariable: 'DOCKER_REGISTRY_PASSWORD']])
+        {
+            // Run all tasks on the app. This includes pushing to OpenShift and S3.
+            sh """
+            gradle pushDockerImage \
+                -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
+            """
         }
-      }
-      stage('Docker push'){
-        container('docker') {
-          withDockerRegistry(credentialsId: 'dockerCredentials', url: "https://${DOCKER_REGISTRY_PUBLIC_UPLOAD_URL}") {
-          sh """
-              docker push "${DOCKER_REGISTRY_PUBLIC_UPLOAD_URL}"/omar-mensa-app:${BRANCH_NAME}
-          """
-          }
+    }
+
+    try {
+        stage ("OpenShift Tag Image")
+        {
+            withCredentials([[$class: 'UsernamePasswordMultiBinding',
+                            credentialsId: 'openshiftCredentials',
+                            usernameVariable: 'OPENSHIFT_USERNAME',
+                            passwordVariable: 'OPENSHIFT_PASSWORD']])
+            {
+                // Run all tasks on the app. This includes pushing to OpenShift and S3.
+                sh """
+                    gradle openshiftTagImage \
+                        -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
+
+                """
+            }
         }
-      }
-    }    
-    stage('Package chart'){
-      container('helm') {
-        sh """
-            mkdir packaged-chart
-            helm package -d packaged-chart chart
-          """
-      }
+    } catch (e) {
+        echo e.toString()
     }
-    stage('Upload chart'){
-      container('builder') {
-        withCredentials([usernameColonPassword(credentialsId: 'helmCredentials', variable: 'HELM_CREDENTIALS')]) {
-          sh "curl -u ${HELM_CREDENTIALS} ${HELM_UPLOAD_URL} --upload-file packaged-chart/*.tgz -v"
-        }
-      }
+  
+    stage("Clean Workspace")
+    {
+        if ("${CLEAN_WORKSPACE}" == "true")
+            step([$class: 'WsCleanup'])
     }
-    stage("Clean Workspace"){
-      if ("${CLEAN_WORKSPACE}" == "true")
-        step([$class: 'WsCleanup'])
-    }
-  }
 }
