@@ -63,7 +63,7 @@ node('omar-build'){
           break
         }
 
-        DOCKER_IMAGE_PATH = "${DOCKER_REGISTRY_PRIVATE_UPLOAD_URL}/omar-wms"
+        DOCKER_IMAGE_PATH = "${DOCKER_REGISTRY_PRIVATE_UPLOAD_URL}/omar-avro-metadata"
     }
 
     stage ("Assemble") {
