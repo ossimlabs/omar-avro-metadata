@@ -10,7 +10,42 @@ properties([
     buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '3', daysToKeepStr: '', numToKeepStr: '20')),
     disableConcurrentBuilds()
 ])
-
+podTemplate(
+  containers: [
+    containerTemplate(
+      name: 'docker',
+      image: 'docker:19.03.11',
+      ttyEnabled: true,
+      command: 'cat',
+      privileged: true
+    ),
+    containerTemplate(
+      image: "${DOCKER_REGISTRY_DOWNLOAD_URL}/omar-builder:latest",
+      name: 'builder',
+      command: 'cat',
+      ttyEnabled: true
+    ),
+      containerTemplate(
+      image: "${DOCKER_REGISTRY_DOWNLOAD_URL}/kubectl-aws-helm:latest",
+      name: 'kubectl-aws-helm',
+      command: 'cat',
+      ttyEnabled: true,
+      alwaysPullImage: true
+    ),
+    containerTemplate(
+      image: "${DOCKER_REGISTRY_DOWNLOAD_URL}/alpine/helm:3.2.3",
+      name: 'helm',
+      command: 'cat',
+      ttyEnabled: true
+    ),
+  ],
+  volumes: [
+    hostPathVolume(
+      hostPath: '/var/run/docker.sock',
+      mountPath: '/var/run/docker.sock'
+    ),
+  ]
+)
 node('omar-build'){
 
     stage("Checkout branch")
@@ -103,24 +138,24 @@ node('omar-build'){
         }
     }
 
-    try {
-        stage ("OpenShift Tag Image")
-        {
-            withCredentials([[$class: 'UsernamePasswordMultiBinding',
-                            credentialsId: 'openshiftCredentials',
-                            usernameVariable: 'OPENSHIFT_USERNAME',
-                            passwordVariable: 'OPENSHIFT_PASSWORD']])
-            {
-                // Run all tasks on the app. This includes pushing to OpenShift and S3.
-                sh """
-                    gradle openshiftTagImage \
-                        -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
-
-                """
+    stage('New Deploy'){
+        container('kubectl-aws-helm') {
+            withAWS(
+            credentials: 'Jenkins IAM User',
+            region: 'us-east-1'){
+                if (BRANCH_NAME == 'master'){
+                    //insert future instructions here
+                }
+                else if (BRANCH_NAME == 'dev') {
+                    sh "aws eks --region us-east-1 update-kubeconfig --name gsp-dev-v2 --alias dev"
+                    sh "kubectl config set-context dev --namespace=omar-dev"
+                    sh "kubectl rollout restart deployment/omar-avro-metadata"   
+                }
+                else {
+                    sh "echo Not deploying ${BRANCH_NAME} branch"
+                }
             }
         }
-    } catch (e) {
-        echo e.toString()
     }
   
     stage("Clean Workspace")
