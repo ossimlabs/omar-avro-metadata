@@ -6,7 +6,7 @@ properties([
     pipelineTriggers([
             [$class: "GitHubPushTrigger"]
     ]),
-    [$class: 'GithubProjectProperty', displayName: '', projectUrlStr: 'https://github.com/ossimlabs/omar-wmts'],
+    [$class: 'GithubProjectProperty', displayName: '', projectUrlStr: 'https://github.com/ossimlabs/omar-avro-metadata'],
     buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '3', daysToKeepStr: '', numToKeepStr: '20')),
     disableConcurrentBuilds()
 ])
@@ -20,20 +20,20 @@ podTemplate(
       privileged: true
     ),
     containerTemplate(
-      image: "${DOCKER_REGISTRY_DOWNLOAD_URL}/omar-builder:latest",
+      image: "nexus-docker-private-group.ossim.io/omar-builder:latest",
       name: 'builder',
       command: 'cat',
       ttyEnabled: true
     ),
       containerTemplate(
-      image: "${DOCKER_REGISTRY_DOWNLOAD_URL}/kubectl-aws-helm:latest",
+      image: "nexus-docker-private-group.ossim.io/kubectl-aws-helm:latest",
       name: 'kubectl-aws-helm',
       command: 'cat',
       ttyEnabled: true,
       alwaysPullImage: true
     ),
     containerTemplate(
-      image: "${DOCKER_REGISTRY_DOWNLOAD_URL}/alpine/helm:3.2.3",
+      image: "nexus-docker-private-group.ossim.io/alpine/helm:3.2.3",
       name: 'helm',
       command: 'cat',
       ttyEnabled: true
@@ -46,6 +46,7 @@ podTemplate(
     ),
   ]
 )
+{
 node('omar-build'){
 
     stage("Checkout branch")
@@ -98,7 +99,7 @@ node('omar-build'){
           break
         }
 
-      //  DOCKER_IMAGE_PATH = "${DOCKER_REGISTRY_PRIVATE_UPLOAD_URL}/omar-avro-metadata"
+      DOCKER_IMAGE_PATH = "${DOCKER_REGISTRY_PRIVATE_UPLOAD_URL}/omar-avro-metadata"
     }
 
     stage ("Assemble") {
@@ -123,19 +124,41 @@ node('omar-build'){
         }
     }
 
-    stage ("Publish Docker App")
-    {
-        withCredentials([[$class: 'UsernamePasswordMultiBinding',
-                        credentialsId: 'dockerCredentials',
-                        usernameVariable: 'DOCKER_REGISTRY_USERNAME',
-                        passwordVariable: 'DOCKER_REGISTRY_PASSWORD']])
-        {
-            // Run all tasks on the app. This includes pushing to OpenShift and S3.
-            sh """
-            gradle pushDockerImage \
-                -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
-            """
+    stage('Docker build') {
+      container('docker') {
+        withDockerRegistry(credentialsId: 'dockerCredentials', url: "https://nexus-docker-private-group.ossim.io") {  //TODO
+          sh """
+            docker build --network=host -t "${DOCKER_REGISTRY_PUBLIC_UPLOAD_URL}"/omar-avro-metadata:"${VERSION}" ./docker
+          """
         }
+      }
+    }
+
+    stage('Docker push'){
+      container('docker') {
+        withDockerRegistry(credentialsId: 'dockerCredentials', url: "https://${DOCKER_REGISTRY_PUBLIC_UPLOAD_URL}") {
+        sh """
+            docker push "${DOCKER_REGISTRY_PUBLIC_UPLOAD_URL}"/omar-avro-metadata:"${VERSION}"
+        """
+        }
+      }
+    }
+
+    stage('Package chart'){
+      container('helm') {
+        sh """
+            mkdir packaged-chart
+            helm package -d packaged-chart chart
+          """
+      }
+    }
+
+    stage('Upload chart'){
+      container('builder') {
+        withCredentials([usernameColonPassword(credentialsId: 'helmCredentials', variable: 'HELM_CREDENTIALS')]) {
+          sh "curl -u ${HELM_CREDENTIALS} ${HELM_UPLOAD_URL} --upload-file packaged-chart/*.tgz -v"
+        }
+      }
     }
 
     stage('New Deploy'){
@@ -149,18 +172,22 @@ node('omar-build'){
                 else if (BRANCH_NAME == 'dev') {
                     sh "aws eks --region us-east-1 update-kubeconfig --name gsp-dev-v2 --alias dev"
                     sh "kubectl config set-context dev --namespace=omar-dev"
-                    sh "kubectl rollout restart deployment/omar-avro-metadata"
+                    sh "kubectl rollout restart deployment/omar-avro-metadata"   
                 }
                 else {
-                    sh "echo Not deploying ${BRANCH_NAME} branch"
+                    //sh "echo Not deploying ${BRANCH_NAME} branch"
+					sh "aws eks --region us-east-1 update-kubeconfig --name gsp-dev-v2 --alias dev"
+                    sh "kubectl config set-context dev --namespace=omar-dev"
+                    sh "kubectl rollout restart deployment/omar-avro-metadata"  
                 }
             }
         }
     }
-
+  
     stage("Clean Workspace")
     {
         if ("${CLEAN_WORKSPACE}" == "true")
             step([$class: 'WsCleanup'])
     }
+}
 }
