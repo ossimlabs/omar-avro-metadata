@@ -141,7 +141,7 @@ node('omar-build'){
     stage('New Deploy'){
         container('kubectl-aws-helm') {
             withAWS(
-            credentials: 'Jenkins IAM User',
+            credentials: 'Jenkins-AWS-IAM',
             region: 'us-east-1'){
                 if (BRANCH_NAME == 'master'){
                     //insert future instructions here
