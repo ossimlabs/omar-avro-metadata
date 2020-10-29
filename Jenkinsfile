@@ -164,7 +164,7 @@ node(POD_LABEL){
     stage('New Deploy'){
         container('kubectl-aws-helm') {
             withAWS(
-            credentials: 'Jenkins-AWS-IAM',
+            credentials: 'Jenkins IAM User',
             region: 'us-east-1'){
                 if (BRANCH_NAME == 'master'){
                     //insert future instructions here
