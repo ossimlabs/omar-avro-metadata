@@ -47,7 +47,7 @@ podTemplate(
   ]
 )
 {
-node('omar-build'){
+node(POD_LABEL){
 
     stage("Checkout branch")
     {
@@ -104,7 +104,7 @@ node('omar-build'){
 
     stage ("Assemble") {
         sh """
-        gradle assemble \
+        ./gradlew assemble \
             -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
         """
         archiveArtifacts "build/libs/*.jar"
@@ -118,7 +118,7 @@ node('omar-build'){
                         passwordVariable: 'MAVEN_REPO_PASSWORD']])
         {
             sh """
-            gradle publish \
+            ./gradlew publish \
                 -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
             """
         }
