@@ -6,5 +6,5 @@ ENV SPRING_CLOUD_CONFIG_ENABLED=true \
     HOME=/home
 WORKDIR $HOME
 EXPOSE 8080
-COPY *.jar $HOME
+COPY /build/libs/*.jar $HOME
 CMD $HOME/run.sh
