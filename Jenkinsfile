@@ -1,7 +1,7 @@
 properties([
     parameters ([
-        string(name: 'BUILD_NODE', defaultValue: 'omar-build', description: 'The build node to run on'),
-        booleanParam(name: 'CLEAN_WORKSPACE', defaultValue: true, description: 'Clean the workspace at the end of the run')
+        booleanParam(name: 'CLEAN_WORKSPACE', defaultValue: true, description: 'Clean the workspace at the end of the run'),
+        string(name: 'DOCKER_REGISTRY_DOWNLOAD_URL', defaultValue: 'nexus-docker-private-group.ossim.io', description: 'Repository of docker images')
     ]),
     pipelineTriggers([
             [$class: "GitHubPushTrigger"]
@@ -10,8 +10,44 @@ properties([
     buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '3', daysToKeepStr: '', numToKeepStr: '20')),
     disableConcurrentBuilds()
 ])
-
-node('omar-build'){
+podTemplate(
+  containers: [
+    containerTemplate(
+      name: 'docker',
+      image: 'docker:19.03.11',
+      ttyEnabled: true,
+      command: 'cat',
+      privileged: true
+    ),
+    containerTemplate(
+      image: "nexus-docker-private-group.ossim.io/omar-builder:latest",
+      name: 'builder',
+      command: 'cat',
+      ttyEnabled: true
+    ),
+      containerTemplate(
+      image: "nexus-docker-private-group.ossim.io/kubectl-aws-helm:latest",
+      name: 'kubectl-aws-helm',
+      command: 'cat',
+      ttyEnabled: true,
+      alwaysPullImage: true
+    ),
+    containerTemplate(
+      image: "nexus-docker-private-group.ossim.io/alpine/helm:3.2.3",
+      name: 'helm',
+      command: 'cat',
+      ttyEnabled: true
+    ),
+  ],
+  volumes: [
+    hostPathVolume(
+      hostPath: '/var/run/docker.sock',
+      mountPath: '/var/run/docker.sock'
+    ),
+  ]
+)
+{
+node(POD_LABEL){
 
     stage("Checkout branch")
     {
@@ -63,13 +99,15 @@ node('omar-build'){
           break
         }
 
-      //  DOCKER_IMAGE_PATH = "${DOCKER_REGISTRY_PRIVATE_UPLOAD_URL}/omar-avro-metadata"
+      DOCKER_IMAGE_PATH = "${DOCKER_REGISTRY_PRIVATE_UPLOAD_URL}/omar-avro-metadata"
     }
 
     stage ("Assemble") {
         sh """
-        gradle assemble \
+        ./gradlew assemble \
             -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
+	./gradlew copyJarToDockerDir \
+	  -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
         """
         archiveArtifacts "build/libs/*.jar"
     }
@@ -82,45 +120,70 @@ node('omar-build'){
                         passwordVariable: 'MAVEN_REPO_PASSWORD']])
         {
             sh """
-            gradle publish \
+            ./gradlew publish \
                 -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
             """
         }
     }
 
-    stage ("Publish Docker App")
-    {
-        withCredentials([[$class: 'UsernamePasswordMultiBinding',
-                        credentialsId: 'dockerCredentials',
-                        usernameVariable: 'DOCKER_REGISTRY_USERNAME',
-                        passwordVariable: 'DOCKER_REGISTRY_PASSWORD']])
-        {
-            // Run all tasks on the app. This includes pushing to OpenShift and S3.
-            sh """
-            gradle pushDockerImage \
-                -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
-            """
+    stage('Docker build') {
+      container('docker') {
+        withDockerRegistry(credentialsId: 'dockerCredentials', url: "https://nexus-docker-private-group.ossim.io") {  //TODO
+          sh """
+            docker build --network=host -t "${DOCKER_REGISTRY_PUBLIC_UPLOAD_URL}"/omar-avro-metadata:"${VERSION}" ./docker
+          """
         }
+      }
     }
 
-    try {
-        stage ("OpenShift Tag Image")
-        {
-            withCredentials([[$class: 'UsernamePasswordMultiBinding',
-                            credentialsId: 'openshiftCredentials',
-                            usernameVariable: 'OPENSHIFT_USERNAME',
-                            passwordVariable: 'OPENSHIFT_PASSWORD']])
-            {
-                // Run all tasks on the app. This includes pushing to OpenShift and S3.
-                sh """
-                    gradle openshiftTagImage \
-                        -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
+    stage('Docker push'){
+      container('docker') {
+        withDockerRegistry(credentialsId: 'dockerCredentials', url: "https://${DOCKER_REGISTRY_PUBLIC_UPLOAD_URL}") {
+        sh """
+            docker push "${DOCKER_REGISTRY_PUBLIC_UPLOAD_URL}"/omar-avro-metadata:"${VERSION}"
+        """
+        }
+      }
+    }
 
-                """
+    stage('Package chart'){
+      container('helm') {
+        sh """
+            mkdir packaged-chart
+            helm package -d packaged-chart chart
+          """
+      }
+    }
+
+    stage('Upload chart'){
+      container('builder') {
+        withCredentials([usernameColonPassword(credentialsId: 'helmCredentials', variable: 'HELM_CREDENTIALS')]) {
+          sh "curl -u ${HELM_CREDENTIALS} ${HELM_UPLOAD_URL} --upload-file packaged-chart/*.tgz -v"
+        }
+      }
+    }
+
+    stage('New Deploy'){
+        container('kubectl-aws-helm') {
+            withAWS(
+            credentials: 'Jenkins IAM User',
+            region: 'us-east-1'){
+                if (BRANCH_NAME == 'master'){
+                    //insert future instructions here
+                }
+                else if (BRANCH_NAME == 'dev') {
+                    sh "aws eks --region us-east-1 update-kubeconfig --name gsp-dev-v2 --alias dev"
+                    sh "kubectl config set-context dev --namespace=omar-dev"
+                    sh "kubectl rollout restart deployment/omar-avro-metadata"   
+                }
+                else {
+                    //sh "echo Not deploying ${BRANCH_NAME} branch"
+					sh "aws eks --region us-east-1 update-kubeconfig --name gsp-dev-v2 --alias dev"
+                    sh "kubectl config set-context dev --namespace=omar-dev"
+                    sh "kubectl rollout restart deployment/omar-avro-metadata"  
+                }
             }
         }
-    } catch (e) {
-        echo e.toString()
     }
   
     stage("Clean Workspace")
@@ -128,4 +191,5 @@ node('omar-build'){
         if ("${CLEAN_WORKSPACE}" == "true")
             step([$class: 'WsCleanup'])
     }
+}
 }
