@@ -56,7 +56,7 @@ podTemplate(
   ]
 )
 
-node('omar-build'){
+node(POD_LABEL){
 
     stage("Checkout branch")
     {
@@ -108,9 +108,47 @@ node('omar-build'){
           break
         }
 
-      //  DOCKER_IMAGE_PATH = "${DOCKER_REGISTRY_PRIVATE_UPLOAD_URL}/omar-avro-metadata"
+        DOCKER_IMAGE_PATH = "${DOCKER_REGISTRY_PRIVATE_UPLOAD_URL}/omar-avro-metadata"
     }
-
+    
+    stage('Package chart'){
+        container('helm'){
+            sh """
+                mkdir packaged-chart
+                helm package -d packaged-chart chart
+            """
+        }
+    }
+    
+    stage('Upload chart'){
+        container('builder'){
+            withCredentials([usernameColonPassword(credentialsId: 'helmCredentials', variable: 'HELM_CREDENTIALS')]){
+                sh "curl -u ${HELM_CREDENTIALS} ${HELM_UPLOAD_URL} --upload-file packaged-chart/*.tgz -v"
+            }
+        }
+    }
+    
+        stage('New Deploy'){
+        container('kubectl-aws-helm') {
+            withAWS(
+            credentials: 'Jenkins-AWS-IAM',
+            region: 'us-east-1'){
+                if (BRANCH_NAME == 'master'){
+                    //insert future instructions here
+                }
+                else if (BRANCH_NAME == 'dev') {
+                    sh "aws eks --region us-east-1 update-kubeconfig --name gsp-dev-v2 --alias dev"
+                    sh "kubectl config set-context dev --namespace=omar-dev"
+                    sh "kubectl rollout restart deployment/omar-avro-metadata"   
+                }
+                else {
+                    sh "echo Not deploying ${BRANCH_NAME} branch" 
+                }
+            }
+        }
+    } 
+        
+/*
     stage ("Assemble") {
         sh """
         gradle assemble \
@@ -167,7 +205,8 @@ node('omar-build'){
     } catch (e) {
         echo e.toString()
     }
-  
+*/
+    
     stage("Clean Workspace")
     {
         if ("${CLEAN_WORKSPACE}" == "true")
