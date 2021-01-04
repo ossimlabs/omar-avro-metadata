@@ -147,65 +147,6 @@ node(POD_LABEL){
             }
         }
     } 
-        
-/*
-    stage ("Assemble") {
-        sh """
-        gradle assemble \
-            -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
-        """
-        archiveArtifacts "build/libs/*.jar"
-    }
-
-    stage ("Publish Nexus")
-    {
-        withCredentials([[$class: 'UsernamePasswordMultiBinding',
-                        credentialsId: 'nexusCredentials',
-                        usernameVariable: 'MAVEN_REPO_USERNAME',
-                        passwordVariable: 'MAVEN_REPO_PASSWORD']])
-        {
-            sh """
-            gradle publish \
-                -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
-            """
-        }
-    }
-
-    stage ("Publish Docker App")
-    {
-        withCredentials([[$class: 'UsernamePasswordMultiBinding',
-                        credentialsId: 'dockerCredentials',
-                        usernameVariable: 'DOCKER_REGISTRY_USERNAME',
-                        passwordVariable: 'DOCKER_REGISTRY_PASSWORD']])
-        {
-            // Run all tasks on the app. This includes pushing to OpenShift and S3.
-            sh """
-            gradle pushDockerImage \
-                -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
-            """
-        }
-    }
-
-    try {
-        stage ("OpenShift Tag Image")
-        {
-            withCredentials([[$class: 'UsernamePasswordMultiBinding',
-                            credentialsId: 'openshiftCredentials',
-                            usernameVariable: 'OPENSHIFT_USERNAME',
-                            passwordVariable: 'OPENSHIFT_PASSWORD']])
-            {
-                // Run all tasks on the app. This includes pushing to OpenShift and S3.
-                sh """
-                    gradle openshiftTagImage \
-                        -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
-
-                """
-            }
-        }
-    } catch (e) {
-        echo e.toString()
-    }
-*/
     
     stage("Clean Workspace")
     {
