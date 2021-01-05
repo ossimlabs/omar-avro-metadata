@@ -55,6 +55,7 @@ podTemplate(
   ]
 )
 
+{
 node(POD_LABEL){
 
     stage("Checkout branch")
@@ -155,4 +156,5 @@ node(POD_LABEL){
         if ("${CLEAN_WORKSPACE}" == "true")
             step([$class: 'WsCleanup'])
     }
+}
 }
