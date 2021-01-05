@@ -125,7 +125,6 @@ node(POD_LABEL){
                 sh "curl -u ${HELM_CREDENTIALS} ${HELM_UPLOAD_URL} --upload-file packaged-chart/*.tgz -v"
             }
         }
-      }
     }
     
         stage('New Deploy'){
@@ -153,3 +152,4 @@ node(POD_LABEL){
         if ("${CLEAN_WORKSPACE}" == "true")
             step([$class: 'WsCleanup'])
     }
+}
