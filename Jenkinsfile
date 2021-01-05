@@ -10,7 +10,6 @@ properties([
     buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '3', daysToKeepStr: '', numToKeepStr: '20')),
     disableConcurrentBuilds()
 ])
-
 podTemplate(
   containers: [
     containerTemplate(
