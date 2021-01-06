@@ -20,7 +20,7 @@ podTemplate(
       privileged: true
     ),
     containerTemplate(
-      image: "${DOCKER_REGISTRY_DOWNLOAD_URL}/omar-builder:1.0.0",
+      image: "${DOCKER_REGISTRY_DOWNLOAD_URL}/omar-builder:latest",
       name: 'builder',
       command: 'cat',
       ttyEnabled: true
@@ -109,6 +109,74 @@ node(POD_LABEL){
 
       DOCKER_IMAGE_PATH = "${DOCKER_REGISTRY_PRIVATE_UPLOAD_URL}/omar-avro-metadata"
     }
+	
+    stage('SonarQube Analysis') {
+      nodejs(nodeJSInstallationName: "${NODEJS_VERSION}") {
+        def scannerHome = tool "${SONARQUBE_SCANNER_VERSION}"
+
+        withSonarQubeEnv('sonarqube'){
+          sh """
+            ${scannerHome}/bin/sonar-scanner \
+            -Dsonar.projectKey=omar-avro-metadata \
+            -Dsonar.login=${SONARQUBE_TOKEN}
+          """
+        }
+      }
+    }
+
+    stage('Build') {
+      container('builder') {
+        sh """
+        ./gradlew assemble \
+            -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
+        ./gradlew copyJarToDockerDir \
+            -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
+        """
+        archiveArtifacts "apps/*/build/libs/*.jar"
+      }
+    }
+    
+    stage('Docker build') {
+      container('docker') {
+        withDockerRegistry(credentialsId: 'dockerCredentials', url: "https://${DOCKER_REGISTRY_DOWNLOAD_URL}") {  //TODO
+
+		if (BRANCH_NAME == 'master'){
+			sh """
+			    docker build --build-arg BASE_IMAGE=${DOCKER_REGISTRY_DOWNLOAD_URL}/ossim-alpine-runtime:1.9 --network=host -t "${DOCKER_REGISTRY_PUBLIC_UPLOAD_URL}"/omar-avro-metadata:"${VERSION}" ./docker
+			"""
+		}
+		else {
+			sh """
+			    docker build --build-arg BASE_IMAGE=${DOCKER_REGISTRY_DOWNLOAD_URL}/ossim-alpine-runtime:1.9 --network=host -t "${DOCKER_REGISTRY_PUBLIC_UPLOAD_URL}"/omar-avro-metadata:"${VERSION}".a ./docker
+			"""
+		}	
+        }
+      }
+    }
+	
+    stage('Docker push'){
+        container('docker') {
+          withDockerRegistry(credentialsId: 'dockerCredentials', url: "https://${DOCKER_REGISTRY_PUBLIC_UPLOAD_URL}") {
+            if (BRANCH_NAME == 'master'){
+                sh """
+                    docker push "${DOCKER_REGISTRY_PUBLIC_UPLOAD_URL}"/omar-avro-metadata:"${VERSION}"
+                """
+            }
+            else if (BRANCH_NAME == 'dev') {
+                sh """
+                    docker tag "${DOCKER_REGISTRY_PUBLIC_UPLOAD_URL}"/omar-avro-metadata:"${VERSION}".a "${DOCKER_REGISTRY_PUBLIC_UPLOAD_URL}"/omar-avro-metadata:dev
+                    docker push "${DOCKER_REGISTRY_PUBLIC_UPLOAD_URL}"/omar-avro-metadata:"${VERSION}".a
+                    docker push "${DOCKER_REGISTRY_PUBLIC_UPLOAD_URL}"/omar-avro-metadata:dev
+                """
+            }
+            else {
+                sh """
+                    docker push "${DOCKER_REGISTRY_PUBLIC_UPLOAD_URL}"/omar-avro-metadata:"${VERSION}".a           
+                """
+            }
+          }
+        }
+      }
 
     stage('Package chart'){
       container('helm') {
