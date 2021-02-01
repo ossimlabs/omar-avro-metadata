@@ -2,6 +2,7 @@ buildscript {
     repositories {
         mavenLocal()
         maven { url ossimMavenProxy }
+        maven { url "https://repo.grails.org/grails/core" }
     }
     dependencies {
         classpath("org.springframework.boot:spring-boot-gradle-plugin:1.5.10.RELEASE")
@@ -56,10 +57,16 @@ dependencies {
     compile('org.codehaus.groovy:groovy')
     compile('org.codehaus.groovy:groovy-json')
 
+
     compile('io.springfox:springfox-swagger-ui:2.0.1')
     compile('io.springfox:springfox-swagger2:2.0.1')
-
+    testCompile('org.grails:grails-gorm-testing-support:2.1.3')
+    testCompile('org.grails:grails-web-testing-support:2.1.3')
     testCompile('org.springframework.boot:spring-boot-starter-test')
+    testCompile("org.grails.plugins:geb:1.1.2")
+    testCompile("org.hibernate:hibernate-core:${hibernateCoreVersion}")
+
+
 }
 
 dependencyManagement {

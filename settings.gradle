@@ -1,6 +1,8 @@
 pluginManagement {
   repositories {
+    mavenLocal()
     maven { url ossimMavenProxy }
+    gradlePluginPortal()
   }
 }
 rootProject.name = projectName
