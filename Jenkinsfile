@@ -139,8 +139,7 @@ node(POD_LABEL){
                 ./gradlew assemble -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
                 ./gradlew copyJarToDockerDir -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
             """
-        archiveArtifacts "plugins/*/build/libs/*.jar"
-        archiveArtifacts "apps/*/build/libs/*.jar"
+            archiveArtifacts "build/libs/*.jar"
         }
     }
 
