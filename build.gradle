@@ -24,13 +24,15 @@ project.ext {
     gitBranch = getCurrentGitBranch(project)
     gitBranch = gitBranch == "HEAD" ? branchName : gitBranch
     buildVersionTag = gitBranch == "master" ? "RELEASE" : "SNAPSHOT"
-
-    dockerBuildDir="${rootProject.projectDir}/docker"
-    jarDestination = "${projectDir}/build/libs/${project.name}-${version}.jar"
 }
 
 project.version "${project.buildVersion}-${buildVersionTag}"
 project.group groupName
+
+ext {
+    dockerBuildDir = "${ rootProject.projectDir }/docker"
+    jarDestination = "${ project.projectDir }/build/libs/${ project.name }-${ project.version }.jar"
+}
 
 // Copy the built jar to the docker directory
 task copyJarToDockerDir( type: Copy ) {
