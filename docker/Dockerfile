@@ -1,6 +1,4 @@
-ARG BASE_IMAGE
-# FROM nexus-docker-public-hosted.ossim.io/${BASE_IMAGE}
-FROM nexus-docker-public-hosted.ossim.io/openjdk8:alpine-slim
+FROM nexus-docker-public-hosted.ossim.io/openjdk11:alpine-slim
 ENV SPRING_CLOUD_CONFIG_ENABLED=true \
     SPRING_CLOUD_DISCOVERY_ENABLED=true \
     HOME=/home

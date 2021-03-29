@@ -136,8 +136,8 @@ node(POD_LABEL){
     stage('Build') {
         container('builder') {
             sh """
-                ./gradlew assemble -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
-                ./gradlew copyJarToDockerDir -PossimMavenProxy=${MAVEN_DOWNLOAD_URL}
+                ./gradlew assemble -PossimMavenProxy=${MAVEN_DOWNLOAD_URL} -PbranchName=${BRANCH_NAME}
+                ./gradlew copyJarToDockerDir -PossimMavenProxy=${MAVEN_DOWNLOAD_URL} -PbranchName=${BRANCH_NAME}
             """
             archiveArtifacts "build/libs/*.jar"
         }
