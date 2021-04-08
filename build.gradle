@@ -4,15 +4,13 @@ buildscript {
         maven { url ossimMavenProxy }
     }
     dependencies {
-        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.5.10.RELEASE")
-        classpath 'com.bmuschko:gradle-docker-plugin:3.0.12'
-        classpath 'io.ossim:gradleDefaults:1.8-RELEASE'
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.5.17.RELEASE")
     }
 }
 
 plugins {
-    id "com.github.ben-manes.versions" version "0.17.0"
-    id "org.sonarqube" version "2.6.2"
+    id "com.github.ben-manes.versions" version "0.36.0"
+    id "org.sonarqube" version "3.1"
 }
 
 apply plugin: 'groovy'
@@ -22,29 +20,46 @@ apply plugin: "idea"
 apply plugin: "java"
 apply plugin: "maven-publish"
 
-io.ossim.gradleDefaults.Variables.setAdditionalVariables(project)
-io.ossim.gradleDefaults.Variables.setVersionVariables(project)
-dockerBuildDir="${rootProject.projectDir}/docker"
-version "${buildVersion}-${buildVersionTag}"
-jarDestination = "${projectDir}/build/libs/${project.name}-${version}.jar"
-io.ossim.gradleDefaults.Publications.addPublication(project, groupName, project.name, "${buildVersion}-${buildVersionTag}")
-io.ossim.gradleDefaults.Publications.addRepository(project, mavenPublishUrl, mavenRepoUsername, mavenRepoPassword)
-io.ossim.gradleDefaults.Docker.addDockerTasks(project, dockerRegistryUrl, dockerRegistryUsername, dockerRegistryPassword, project.name, dockerImageTag, dockerBuildDir, jarDestination, ["BASE_IMAGE": "${dockerRegistryUrl}/${dockerBaseImage}:${dockerFromTag}"])
-io.ossim.gradleDefaults.Openshift.addOpenshiftTasks(project, openshiftUrl, openshiftUsername, openshiftPassword, openshiftProjectName, openshiftServiceName,  dockerRegistryUrl, project.name, dockerImageTag)
+project.ext {
+    gitBranch = getCurrentGitBranch(project)
+    gitBranch = gitBranch == "HEAD" ? branchName : gitBranch
+    buildVersionTag = gitBranch == "master" ? "RELEASE" : "SNAPSHOT"
+}
+
+project.version "${project.buildVersion}-${buildVersionTag}"
+project.group groupName
+
+ext {
+    dockerBuildDir = "${ rootProject.projectDir }/docker"
+    jarDestination = "${ project.projectDir }/build/libs/${ project.name }-${ project.version }.jar"
+}
+
+// Copy the built jar to the docker directory
+task copyJarToDockerDir( type: Copy ) {
+    doFirst {
+        println "Copying ${ jarDestination } to ${ dockerBuildDir }"
+    }
+    from jarDestination
+    into dockerBuildDir
+}
 
 sourceCompatibility = 1.8
 
 repositories {
     mavenLocal()
+    mavenCentral()
     maven { url ossimMavenProxy }
+    maven { url "https://repo.grails.org/grails/core" }
 }
 
-ext {
-    springCloudVersion = "${springCloudDependencyV}"
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+    applyMavenExclusions false
 }
 
 dependencies {
-    compile "de.codecentric:spring-boot-admin-starter-client:${springBootAdminStarterClientV}"
     compile('org.springframework.boot:spring-boot-starter')
     compile('org.springframework.boot:spring-boot-starter-web')
     compile('org.springframework.cloud:spring-cloud-starter-aws')
@@ -62,8 +77,17 @@ dependencies {
     testCompile('org.springframework.boot:spring-boot-starter-test')
 }
 
-dependencyManagement {
-    imports {
-        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+String getCurrentGitBranch(Project project) {
+    def gitBranch = "Unknown branch"
+    try {
+        def workingDir = new File("${project.projectDir}")
+        def result = 'git rev-parse --abbrev-ref HEAD'.execute(null, workingDir)
+        result.waitFor()
+        if (result.exitValue() == 0) {
+            gitBranch = result.text.trim()
+        }
+    } catch (e) {
+        e.printStackTrace()
     }
+    return gitBranch
 }
